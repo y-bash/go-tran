@@ -17,6 +17,8 @@ type TransData struct {
 	Message string `json:"message"`
 }
 
+// ISO 639-1
+// https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
 func Translate(text, source, target string) (string, error) {
 	v := url.Values{}
 	v.Add("text", text)
@@ -41,4 +43,3 @@ func Translate(text, source, target string) (string, error) {
 	}
 	return td.Text, nil
 }
-
