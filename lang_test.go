@@ -5,14 +5,14 @@ import (
 	"testing"
 )
 
-type FindLangTest struct {
+type LookupLangTest struct {
 	in   string
 	code string
 	name string
 	err  string
 }
 
-var findlangtests = []FindLangTest{
+var findlangtests = []LookupLangTest{
 	0: {"ja", "ja", "Japanese", ""},
 	1: {"JA", "ja", "Japanese", ""},
 	2: {"jap", "ja", "Japanese", ""},
@@ -24,9 +24,9 @@ var findlangtests = []FindLangTest{
 	8: {"zz", "", "", "not found"},
 }
 
-func TestFindLang(t *testing.T) {
+func TestLookupLang(t *testing.T) {
 	for i, tt := range findlangtests {
-		code, name, err := FindLang(tt.in)
+		code, name, err := LookupLang(tt.in)
 		if err != nil {
 			if tt.err == "" {
 				t.Errorf("#%d have error: %s, want error: none", i, err.Error())
@@ -42,7 +42,7 @@ func TestFindLang(t *testing.T) {
 			continue
 		}
 		if code != tt.code || name != tt.name {
-			t.Errorf("#%d FindLang(%q) = (%q, %q, nil)  want: (%q, %q, nil)",
+			t.Errorf("#%d LookupLang(%q) = (%q, %q, nil)  want: (%q, %q, nil)",
 				i, tt.in, code, name, tt.code, tt.name)
 		}
 	}

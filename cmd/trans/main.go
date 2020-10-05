@@ -15,7 +15,7 @@ import (
 func interact(source, target string) error {
 	sc := bufio.NewScanner(os.Stdin)
 	for {
-		fmt.Fprintf(os.Stderr, "[%s=>%s]> ",source, target)
+		fmt.Fprintf(os.Stderr, "(%s=>%s)> ",source, target)
 		if !sc.Scan() {
 			break
 		}
@@ -29,31 +29,52 @@ func interact(source, target string) error {
 			fmt.Fprintln(os.Stderr, "Leaving TRANS.")
 			return nil
 
+		case strings.HasPrefix(in, ":h"):
+			fmt.Fprintln(os.Stderr, "Command list")
+			fmt.Fprintln(os.Stderr, ":h Show help")
+			fmt.Fprintln(os.Stderr, ":s Source language (ISO-639-1 code)")
+			fmt.Fprintln(os.Stderr, ":t Target language (ISO-639-1 code)")
+			fmt.Fprintln(os.Stderr, ":q Quit")
+			continue
+
 		case strings.HasPrefix(in, ":s"):
+			var code, name string
 			cmd := strings.TrimSpace(string([]rune(in)[2:]))
-			if len(cmd) <= 0 {
+			switch len(cmd) {
+			case 0:
 				source = ""
 				fmt.Fprintln(os.Stderr, "Source: Auto")
 				continue
-			}
-			code, name, err := trans.FindLang(cmd)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err.Error())
+			case 1:
+				fmt.Fprintf(os.Stderr, "Invalid value: %s\n", cmd)
 				continue
+			default:
+				var err error
+				code, name, err = trans.LookupLang(cmd)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err.Error())
+					continue
+				}
 			}
 			source = code
 			fmt.Fprintf(os.Stderr, "Source: %s (%s)\n", name, code)
 
 		case strings.HasPrefix(in, ":t"):
+			var code, name string
 			cmd := strings.TrimSpace(string([]rune(in)[2:]))
-			if len(cmd) <= 0 {
-				fmt.Fprintln(os.Stderr, "Target language cannot be auto")
+			switch len(cmd) {
+			case 0:
+				code, name = trans.CurrentLang()
+			case 1:
+				fmt.Fprintf(os.Stderr, "Invalid value: %s\n", cmd)
 				continue
-			}
-			code, name, err := trans.FindLang(cmd)
-			if err != nil {
-				fmt.Fprintln(os.Stderr, err.Error())
-				continue
+			default:
+				var err error
+				code, name, err = trans.LookupLang(cmd)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err.Error())
+					continue
+				}
 			}
 			target = code
 			fmt.Fprintf(os.Stderr, "Target: %s (%s)\n", name, code)
@@ -114,13 +135,14 @@ func printLangCodes() {
 }
 
 func main() {
+	curr, _ := trans.CurrentLang()
 	var help, lang bool
 	var source, target string
 
 	flag.BoolVar(&help, "h", false, "Show help")
 	flag.BoolVar(&lang, "l", false, "Show ISO-639-1 Language codes")
 	flag.StringVar(&source, "s", "", "Source language (ISO-639-1 code, Optional)")
-	flag.StringVar(&target, "t", "ja", "Target language (ISO-639-1 code, Required)")
+	flag.StringVar(&target, "t", curr, "Target language (ISO-639-1 code, Required)")
 	flag.Parse()
 
 	if help {

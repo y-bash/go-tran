@@ -2,6 +2,9 @@ package trans
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"runtime"
 	"sort"
 	"strings"
 )
@@ -193,7 +196,7 @@ var iso639map = map[string]string{
 	"zu": "Zulu",
 }
 
-func FindLang(s string) (code, name string, err error) {
+func LookupLang(s string) (code, name string, err error) {
 	c := strings.ToLower(s)
 	n, ok := iso639map[c]
 	if ok {
@@ -224,4 +227,23 @@ func LangList() []ISO639 {
 		return a[i].Code < a[j].Code
 	})
 	return a
+}
+
+func CurrentLang() (code, name string) {
+	var lang string
+	if s, ok := os.LookupEnv("LANG"); ok {
+		lang = string(s[:2])
+	} else if runtime.GOOS == "windows" {
+		cmd := exec.Command("powershell", "Get-Culture | Select-Object -exp Name")
+		if bs, err := cmd.Output(); err == nil {
+			lang = string(bs[:2])
+		}
+	}
+	if len(lang) == 2 {
+		code, name, err := LookupLang(lang)
+		if err == nil {
+			return code, name
+		}
+	}
+	return "en", "English"
 }
