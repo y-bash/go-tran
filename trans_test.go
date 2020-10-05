@@ -36,8 +36,12 @@ func TestTranslate(t *testing.T) {
 			}
 			if !strings.Contains(err.Error(), tt.err) {
 				t.Errorf("#%d have error: %s, want error: %s", i, err.Error(), tt.err)
-				continue
 			}
+			continue
+		}
+		if tt.err != "" {
+			t.Errorf("#%d have error: none, want error: %s", i, tt.err)
+			continue
 		}
 		if strings.ToLower(out) != strings.ToLower(tt.out) {
 			t.Errorf("#%d Translate(%q, %q, %q) = %q, want: %q",

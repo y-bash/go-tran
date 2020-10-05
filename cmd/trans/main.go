@@ -58,39 +58,24 @@ func isTerminal(fd uintptr) bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
-func printISO639() {
-	type iso639 struct {
-		code string
-		name string
-	}
-	langTable := []iso639 {
-		{"de", "Deutsch"},
-		{"en", "English"},
-		{"es", "Spanish"},
-		{"fr", "French"},
-		{"it", "Italian"},
-		{"ja", "Japanese"},
-		{"ko", "Korean"},
-		{"pt", "Portuguese"},
-		{"ru", "Russian"},
-		{"zh", "Chinese"},
-	}
+func printLangCodes() {
+	langs := LangList()
 	fmt.Println("ISO639-1 - Codes for the representation of names of languages.")
 	fmt.Println("(https://en.wikipedia.org/wiki/ISO_639-1)")
 	fmt.Println("---- -------------")
 	fmt.Println("Code Language name")
 	fmt.Println("---- -------------")
-	for _,lang := range langTable {
+	for _,lang := range langs {
 		fmt.Printf(" %s  %s\n", lang.code, lang.name)
 	}
 }
 
 func main() {
-	var help, iso639 bool
+	var help, lang bool
 	var source, target string
 
 	flag.BoolVar(&help, "h", false, "Show help")
-	flag.BoolVar(&iso639, "i", false, "Show some major ISO-639-1 codes")
+	flag.BoolVar(&lang, "l", false, "Show ISO-639-1 Language codes")
 	flag.StringVar(&source, "s", "", "Source language (ISO-639-1 code, Optional)")
 	flag.StringVar(&target, "t", "ja", "Target language (ISO-639-1 code, Required)")
 	flag.Parse()
@@ -100,8 +85,8 @@ func main() {
 		return
 	}
 
-	if iso639 {
-		printISO639()
+	if lang {
+		printLangCodes()
 		return
 	}
 
