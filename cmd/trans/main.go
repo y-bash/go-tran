@@ -59,14 +59,14 @@ func isTerminal(fd uintptr) bool {
 }
 
 func printLangCodes() {
-	langs := LangList()
+	langs := trans.LangList()
 	fmt.Println("ISO639-1 - Codes for the representation of names of languages.")
 	fmt.Println("(https://en.wikipedia.org/wiki/ISO_639-1)")
 	fmt.Println("---- -------------")
 	fmt.Println("Code Language name")
 	fmt.Println("---- -------------")
 	for _,lang := range langs {
-		fmt.Printf(" %s  %s\n", lang.code, lang.name)
+		fmt.Printf(" %s  %s\n", lang.Code, lang.Name)
 	}
 }
 

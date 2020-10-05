@@ -209,8 +209,8 @@ func findLang(s string) (code, name string, err error) {
 }
 
 type ISO639 struct {
-	code string
-	name string
+	Code string
+	Name string
 }
 
 func LangList() []ISO639 {
@@ -221,7 +221,7 @@ func LangList() []ISO639 {
 		i++
 	}
 	sort.Slice(a,func(i, j int) bool {
-		return a[i].code < a[j].code
+		return a[i].Code < a[j].Code
 	})
 	return a
 }
