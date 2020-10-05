@@ -26,7 +26,7 @@ var findlangtests = []FindLangTest{
 
 func TestFindLang(t *testing.T) {
 	for i, tt := range findlangtests {
-		code, name, err := findLang(tt.in)
+		code, name, err := FindLang(tt.in)
 		if err != nil {
 			if tt.err == "" {
 				t.Errorf("#%d have error: %s, want error: none", i, err.Error())
@@ -42,7 +42,7 @@ func TestFindLang(t *testing.T) {
 			continue
 		}
 		if code != tt.code || name != tt.name {
-			t.Errorf("#%d findLang(%q) = (%q, %q, nil)  want: (%q, %q, nil)",
+			t.Errorf("#%d FindLang(%q) = (%q, %q, nil)  want: (%q, %q, nil)",
 				i, tt.in, code, name, tt.code, tt.name)
 		}
 	}

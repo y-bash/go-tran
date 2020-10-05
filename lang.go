@@ -193,7 +193,7 @@ var iso639map = map[string]string{
 	"zu": "Zulu",
 }
 
-func findLang(s string) (code, name string, err error) {
+func FindLang(s string) (code, name string, err error) {
 	c := strings.ToLower(s)
 	n, ok := iso639map[c]
 	if ok {

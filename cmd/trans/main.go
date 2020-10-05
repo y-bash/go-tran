@@ -13,15 +13,58 @@ import (
 )
 
 func interact(source, target string) error {
-	fmt.Fprintln(os.Stderr, "Please enter something.")
 	sc := bufio.NewScanner(os.Stdin)
-	for sc.Scan() {
-		in := sc.Text()
-		out, err := trans.Translate(in, source, target)
-		if err != nil {
-			return err
+	for {
+		fmt.Fprintf(os.Stderr, "[%s=>%s]> ",source, target)
+		if !sc.Scan() {
+			break
 		}
-		fmt.Fprintln(os.Stderr, " => " + out)
+		in := sc.Text()
+		in = strings.TrimSpace(in)
+		if len(in) <= 0 {
+			continue
+		}
+		switch {
+		case strings.HasPrefix(in, ":q"):
+			fmt.Fprintln(os.Stderr, "Leaving TRANS.")
+			return nil
+
+		case strings.HasPrefix(in, ":s"):
+			cmd := strings.TrimSpace(string([]rune(in)[2:]))
+			if len(cmd) <= 0 {
+				source = ""
+				fmt.Fprintln(os.Stderr, "Source: Auto")
+				continue
+			}
+			code, name, err := trans.FindLang(cmd)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err.Error())
+				continue
+			}
+			source = code
+			fmt.Fprintf(os.Stderr, "Source: %s (%s)\n", name, code)
+
+		case strings.HasPrefix(in, ":t"):
+			cmd := strings.TrimSpace(string([]rune(in)[2:]))
+			if len(cmd) <= 0 {
+				fmt.Fprintln(os.Stderr, "Target language cannot be auto")
+				continue
+			}
+			code, name, err := trans.FindLang(cmd)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err.Error())
+				continue
+			}
+			target = code
+			fmt.Fprintf(os.Stderr, "Target: %s (%s)\n", name, code)
+
+		default:
+			out, err := trans.Translate(in, source, target)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(os.Stderr, out)
+		}
 	}
 	return nil
 }
