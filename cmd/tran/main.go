@@ -108,7 +108,7 @@ func interact(source, target string) {
 		}
 		switch {
 		case in == "q":
-			fmt.Fprintln(os.Stderr, "Leaving TRANS.")
+			fmt.Fprintln(os.Stderr, "Leaving GO-TRAN.")
 			return
 
 		case in == "h":
@@ -199,7 +199,7 @@ func main() {
 		return
 	}
 	if flag.NArg() == 0 && isTerminal(os.Stdin.Fd()) {
-		fmt.Fprintln(os.Stderr, "Welcome to the GO-TRANS!")
+		fmt.Fprintln(os.Stderr, "Welcome to the GO-TRAN!")
 		printHelp()
 		interact(source, target)
 		return
