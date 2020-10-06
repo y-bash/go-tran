@@ -2,33 +2,36 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"flag"
 	"fmt"
-	"github.com/mattn/go-isatty"
-	"github.com/peterh/liner"
-	"github.com/y-bash/go-trans"
 	"io"
 	"log"
 	"os"
 	"strings"
 	"text/template"
+
+	"github.com/mattn/go-isatty"
+	"github.com/morikuni/aec"
+	"github.com/peterh/liner"
+	"github.com/y-bash/go-trans"
 )
 
 func printHelp() {
-	text := `--- --------------------------------  --------
+	blue := aec.FullColorF(128, 160, 208)
+	text := `--- --------------------------------  ---------
 Cmd Description                       Examples
---- --------------------------------  --------
- h  Show help                         h
- l  Show ISO-639-1 Language codes     l en
- s  Source language code (ISO-639-1)  s en
- t  Target language code (ISO-639-1)  t ja
- q  Quit                              q`
-	fmt.Fprintln(os.Stderr, text)
+--- --------------------------------  ---------
+ h  Show help                         :ja> h
+ l  Show ISO-639-1 Language codes     :ja> l en
+ s  Source language code (ISO-639-1)  :ja> s en
+ t  Target language code (ISO-639-1)  :ja> t ja
+ q  Quit                              :ja> q`
+	fmt.Fprintln(os.Stderr, blue.Apply(text))
 }
 
 func printLangCodes(w io.Writer, substr string) {
-	text := `ISO639-1 Codes for the representation of names of languages.
----- -------------
+	text := `---- -------------
 Code Language name
 ---- -------------
 {{range .}} {{.Code}}  {{.Name}}
@@ -39,7 +42,10 @@ Code Language name
 		return
 	}
 	tmpl := template.Must(template.New("lang").Parse(text))
-	tmpl.Execute(w, a)
+	var buf bytes.Buffer
+	tmpl.Execute(&buf, a)
+	blue := aec.FullColorF(128, 160, 208)
+	fmt.Fprint(w, blue.Apply(string(buf.Bytes())))
 }
 
 func commandSource(in, curr string) (source string, ok bool) {
@@ -48,7 +54,9 @@ func commandSource(in, curr string) (source string, ok bool) {
 	switch {
 	case len(in) == 1: // in is "s"
 		if curr != "" {
-			fmt.Fprintln(os.Stderr, "Source changed: Auto")
+			green := aec.FullColorF(96, 192, 96)
+			msg := green.Apply("Source changed: Auto")
+			fmt.Fprintln(os.Stderr, msg)
 		}
 		return "", true
 	case len(in) >= 2: // in contains "s "
@@ -58,11 +66,15 @@ func commandSource(in, curr string) (source string, ok bool) {
 		ok = false
 	}
 	if !ok {
-		fmt.Fprintf(os.Stderr, "%s is not found\n", arg)
+		red := aec.FullColorF(208, 64, 64)
+		msg := red.Apply("%s is not found\n")
+		fmt.Fprintf(os.Stderr, msg, arg)
 		return "", false
 	}
 	if curr != code {
-		fmt.Fprintf(os.Stderr, "Source changed: %s (%s)\n", name, code)
+		green := aec.FullColorF(96, 192, 96)
+		msg := green.Apply("Source changed: %s (%s)\n")
+		fmt.Fprintf(os.Stderr, msg, name, code)
 	}
 	return code, true
 }
@@ -84,11 +96,15 @@ func commandTarget(in, curr string) (target string, ok bool) {
 		ok = false
 	}
 	if !ok {
-		fmt.Fprintf(os.Stderr, "%q is not found\n", arg)
+		red := aec.FullColorF(208, 64, 64)
+		msg := red.Apply("%q is not found\n")
+		fmt.Fprintf(os.Stderr, msg, arg)
 		return "", ok
 	}
 	if curr != code {
-		fmt.Fprintf(os.Stderr, "Target changed: %s (%s)\n", name, code)
+		green := aec.FullColorF(96, 192, 96)
+		msg := green.Apply("Target changed: %s (%s)\n")
+		fmt.Fprintf(os.Stderr, msg, name, code)
 	}
 	return code, ok
 }
@@ -138,9 +154,11 @@ func interact(source, target string) {
 			} else {
 				out, err := trans.Translate(in, source, target)
 				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
+					red := aec.FullColorF(208, 64, 64)
+					fmt.Fprintln(os.Stderr, red.Apply(err.Error()))
 				} else {
-					fmt.Fprintln(os.Stderr, out)
+					yellow := aec.FullColorF(255, 200, 100)
+					fmt.Fprintln(os.Stderr, yellow.Apply(out))
 				}
 			}
 		}
