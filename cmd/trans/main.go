@@ -10,84 +10,138 @@ import (
 	"log"
 	"os"
 	"strings"
+	"text/template"
 )
 
-func interact(source, target string) error {
+func printHelp() {
+	text := `--- --------------------------------  --------
+Cmd Description                       Examples
+--- --------------------------------  --------
+ h  Show help                         h
+ l  Show ISO-639-1 Language codes     l en
+ s  Source language code (ISO-639-1)  s en
+ t  Target language code (ISO-639-1)  t ja
+ q  Quit                              q`
+	fmt.Fprintln(os.Stderr, text)
+}
+
+func printLangCodes(w io.Writer, substr string) {
+	text := `ISO639-1 Codes for the representation of names of languages.
+---- -------------
+Code Language name
+---- -------------
+{{range .}} {{.Code}}  {{.Name}}
+{{end -}}
+`
+	a := trans.ContainsLangList(substr)
+	if len(a) == 0 {
+		return
+	}
+	tmpl := template.Must(template.New("lang").Parse(text))
+	tmpl.Execute(w, a)
+}
+
+func commandSource(in, curr string) (source string, ok bool) {
+	var arg string
+	var code, name string
+	switch {
+	case len(in) == 1: // in is "s"
+		if curr != "" {
+			fmt.Fprintln(os.Stderr, "Source changed: Auto")
+		}
+		return "", true
+	case len(in) >= 2: // in contains "s "
+		arg = strings.TrimSpace(string([]rune(in)[2:]))
+		code, name, ok = trans.LookupLang(arg)
+	default:
+		ok = false
+	}
+	if !ok {
+		fmt.Fprintf(os.Stderr, "%s is not found\n", arg)
+		return "", false
+	}
+	if curr != code {
+		fmt.Fprintf(os.Stderr, "Source changed: %s (%s)\n", name, code)
+	}
+	return code, true
+}
+
+func commandTarget(in, curr string) (target string, ok bool) {
+	var arg string
+	var code, name string
+	switch {
+	case len(in) == 1: // in is "t"
+		code, name = trans.CurrentLang()
+		ok = true
+	case len(in) >= 2: // in contains "t "
+		arg = strings.TrimSpace(string([]rune(in)[2:]))
+		code, name, ok = trans.LookupLang(arg)
+		if !ok {
+			code, name, ok = trans.LookupPlang(arg)
+		}
+	default:
+		ok = false
+	}
+	if !ok {
+		fmt.Fprintf(os.Stderr, "%q is not found\n", arg)
+		return "", ok
+	}
+	if curr != code {
+		fmt.Fprintf(os.Stderr, "Target changed: %s (%s)\n", name, code)
+	}
+	return code, ok
+}
+
+func interact(source, target string) {
 	sc := bufio.NewScanner(os.Stdin)
 	for {
-		fmt.Fprintf(os.Stderr, "(%s=>%s)> ",source, target)
+		fmt.Fprintf(os.Stderr, "%s:%s> ", source, target)
 		if !sc.Scan() {
 			break
 		}
-		in := sc.Text()
-		in = strings.TrimSpace(in)
+		in := strings.TrimSpace(sc.Text())
 		if len(in) <= 0 {
 			continue
 		}
 		switch {
-		case strings.HasPrefix(in, ":q"):
+		case in == "q":
 			fmt.Fprintln(os.Stderr, "Leaving TRANS.")
-			return nil
+			return
 
-		case strings.HasPrefix(in, ":h"):
-			fmt.Fprintln(os.Stderr, "Command list")
-			fmt.Fprintln(os.Stderr, ":h Show help")
-			fmt.Fprintln(os.Stderr, ":s Source language (ISO-639-1 code)")
-			fmt.Fprintln(os.Stderr, ":t Target language (ISO-639-1 code)")
-			fmt.Fprintln(os.Stderr, ":q Quit")
-			continue
+		case in == "h":
+			printHelp()
 
-		case strings.HasPrefix(in, ":s"):
-			var code, name string
-			cmd := strings.TrimSpace(string([]rune(in)[2:]))
-			switch len(cmd) {
-			case 0:
-				source = ""
-				fmt.Fprintln(os.Stderr, "Source: Auto")
-				continue
-			case 1:
-				fmt.Fprintf(os.Stderr, "Invalid value: %s\n", cmd)
-				continue
-			default:
-				var err error
-				code, name, err = trans.LookupLang(cmd)
-				if err != nil {
-					fmt.Fprintln(os.Stderr, err.Error())
-					continue
-				}
+		case in == "l" || strings.HasPrefix(in, "l "):
+			var substr string
+			if in != "l" {
+				substr = in[2:]
 			}
-			source = code
-			fmt.Fprintf(os.Stderr, "Source: %s (%s)\n", name, code)
+			printLangCodes(os.Stderr, substr)
 
-		case strings.HasPrefix(in, ":t"):
-			var code, name string
-			cmd := strings.TrimSpace(string([]rune(in)[2:]))
-			switch len(cmd) {
-			case 0:
-				code, name = trans.CurrentLang()
-			case 1:
-				fmt.Fprintf(os.Stderr, "Invalid value: %s\n", cmd)
-				continue
-			default:
-				var err error
-				code, name, err = trans.LookupLang(cmd)
-				if err != nil {
-					fmt.Fprintln(os.Stderr, err.Error())
-					continue
-				}
+		case in == "s" || strings.HasPrefix(in, "s "):
+			if code, ok := commandSource(in, source); ok {
+				source = code
 			}
-			target = code
-			fmt.Fprintf(os.Stderr, "Target: %s (%s)\n", name, code)
-
+		case len(in) <= 2 || in == "t" || strings.HasPrefix(in, "t "):
+			if in != "t" && len(in) <= 2 {
+				in = "t " + in
+			}
+			if code, ok := commandTarget(in, target); ok {
+				target = code
+			}
 		default:
-			out, err := trans.Translate(in, source, target)
-			if err != nil {
-				return err
+			if out, ok := trans.Ptranslate(in, target); ok {
+				fmt.Fprintln(os.Stderr, out)
+			} else {
+				out, err := trans.Translate(in, source, target)
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+				} else {
+					fmt.Fprintln(os.Stderr, out)
+				}
 			}
-			fmt.Fprintln(os.Stderr, out)
 		}
 	}
-	return nil
 }
 
 func read(f io.Reader) string {
@@ -122,18 +176,6 @@ func isTerminal(fd uintptr) bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
-func printLangCodes() {
-	langs := trans.LangList()
-	fmt.Println("ISO639-1 - Codes for the representation of names of languages.")
-	fmt.Println("(https://en.wikipedia.org/wiki/ISO_639-1)")
-	fmt.Println("---- -------------")
-	fmt.Println("Code Language name")
-	fmt.Println("---- -------------")
-	for _,lang := range langs {
-		fmt.Printf(" %s  %s\n", lang.Code, lang.Name)
-	}
-}
-
 func main() {
 	curr, _ := trans.CurrentLang()
 	var help, lang bool
@@ -149,17 +191,14 @@ func main() {
 		flag.Usage()
 		return
 	}
-
 	if lang {
-		printLangCodes()
+		printLangCodes(os.Stdout, "")
 		return
 	}
-
 	if flag.NArg() == 0 && isTerminal(os.Stdin.Fd()) {
-		err := interact(source, target)
-		if err != nil {
-			log.Fatal(err)
-		}
+		fmt.Fprintln(os.Stderr, "Welcome to the GO-TRANS!")
+		printHelp()
+		interact(source, target)
 		return
 	}
 

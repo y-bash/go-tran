@@ -1,7 +1,6 @@
 package trans
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
@@ -196,19 +195,25 @@ var iso639map = map[string]string{
 	"zu": "Zulu",
 }
 
-func LookupLang(s string) (code, name string, err error) {
-	c := strings.ToLower(s)
-	n, ok := iso639map[c]
-	if ok {
-		return c, n, nil
-	}
-	for k, v := range iso639map {
-		lv := strings.ToLower(v)
-		if strings.Contains(lv, c) {
-			return k, v, nil
+func LookupLang(s string) (code, name string, ok bool) {
+	s = strings.ToLower(strings.TrimSpace(s))
+	switch {
+	case len(s) == 2:
+		name, ok := iso639map[s]
+		if ok {
+			return s, name, true
 		}
+	case len(s) >= 3:
+		for code, name := range iso639map {
+			lname := strings.ToLower(name)
+			if strings.Contains(lname, s) {
+				return code, name, true
+			}
+		}
+	default:
+		// Do nothing
 	}
-	return "", "", fmt.Errorf("%s is not found", s)
+	return "", "", false
 }
 
 type ISO639 struct {
@@ -216,14 +221,16 @@ type ISO639 struct {
 	Name string
 }
 
-func LangList() []ISO639 {
-	a := make([]ISO639, len(iso639map))
-	i := 0
+func ContainsLangList(substr string) []ISO639 {
+	substr = strings.ToLower(substr)
+	a := make([]ISO639, 0, len(iso639map))
 	for k, v := range iso639map {
-		a[i] = ISO639{k, v}
-		i++
+		if strings.Contains(strings.ToLower(k), substr) ||
+			strings.Contains(strings.ToLower(v), substr) {
+			a = append(a, ISO639{k, v})
+		}
 	}
-	sort.Slice(a,func(i, j int) bool {
+	sort.Slice(a, func(i, j int) bool {
 		return a[i].Code < a[j].Code
 	})
 	return a
@@ -232,16 +239,16 @@ func LangList() []ISO639 {
 func CurrentLang() (code, name string) {
 	var lang string
 	if s, ok := os.LookupEnv("LANG"); ok {
-		lang = string(s[:2])
+		lang = strings.ToLower(s)
 	} else if runtime.GOOS == "windows" {
 		cmd := exec.Command("powershell", "Get-Culture | Select-Object -exp Name")
 		if bs, err := cmd.Output(); err == nil {
-			lang = string(bs[:2])
+			lang = strings.ToLower(string(bs))
 		}
 	}
-	if len(lang) == 2 {
-		code, name, err := LookupLang(lang)
-		if err == nil {
+	if len(lang) >= 2 {
+		code, name, ok := LookupLang(string(lang[:2]))
+		if ok {
 			return code, name
 		}
 	}
