@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/mattn/go-isatty"
+	"github.com/peterh/liner"
 	"github.com/y-bash/go-trans"
 	"io"
 	"log"
@@ -93,13 +94,15 @@ func commandTarget(in, curr string) (target string, ok bool) {
 }
 
 func interact(source, target string) {
-	sc := bufio.NewScanner(os.Stdin)
+	line := liner.NewLiner()
+	defer line.Close()
 	for {
-		fmt.Fprintf(os.Stderr, "%s:%s> ", source, target)
-		if !sc.Scan() {
-			break
+		pr := fmt.Sprintf("%s:%s> ", source, target)
+		in, err := line.Prompt(pr)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			continue
 		}
-		in := strings.TrimSpace(sc.Text())
 		if len(in) <= 0 {
 			continue
 		}
