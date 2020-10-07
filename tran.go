@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 const gURL = "https://script.google.com/macros/s/" +
@@ -37,7 +38,13 @@ func Translate(text, source, target string) (string, error) {
 		return "", err
 	}
 	if td.Code != 200 {
-		return "", errors.New(td.Message)
+		msg := td.Message
+		prefix := "exception:"
+		if strings.HasPrefix(strings.ToLower(msg), prefix) {
+			msg = string(msg[len(prefix):])
+			msg = strings.TrimSpace(msg)
+		}
+		return "", errors.New(msg)
 	}
 	return td.Text, nil
 }

@@ -1,4 +1,4 @@
-module github.com/y-bash/go-trans
+module github.com/y-bash/go-tran
 
 go 1.15
 

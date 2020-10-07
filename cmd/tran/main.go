@@ -14,38 +14,71 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/morikuni/aec"
 	"github.com/peterh/liner"
-	"github.com/y-bash/go-trans"
+	"github.com/y-bash/go-tran"
 )
 
-func printHelp() {
-	blue := aec.FullColorF(128, 160, 208)
-	text := `--- --------------------------------  ---------
-Cmd Description                       Examples
---- --------------------------------  ---------
- h  Show help                         :ja> h
- l  Show ISO-639-1 Language codes     :ja> l en
- s  Source language code (ISO-639-1)  :ja> s en
- t  Target language code (ISO-639-1)  :ja> t ja
- q  Quit                              :ja> q`
-	fmt.Fprintln(os.Stderr, blue.Apply(text))
+var (
+	cInfo   = aec.FullColorF(128, 160, 208) // Blue
+	cState  = aec.FullColorF(96, 192, 96)   // Green - State changed
+	cError  = aec.FullColorF(208, 64, 64)   // Red
+	cResult = aec.FullColorF(255, 200, 100) // Yellow - Translation result
+)
+
+func helpToTerm() {
+	text := `┌──┬──────────┬────────┐
+│Cmd │    Description     │    Examples    │
+├──┼──────────┼──┬─────┤
+│ h  │Show help           │h   │          │
+│ l  │Show language codes │l en│l nese    │
+│ s  │Source language code│s en│s french  │
+│ t  │Target language code│t ja│t italian │
+│ q  │Quit                │q   │          │
+└──┴──────────┴──┴─────┘ `
+
+	fmt.Fprintln(os.Stderr, cInfo.Apply(text))
 }
 
-func printLangCodes(w io.Writer, substr string) {
-	text := `---- -------------
-Code Language name
----- -------------
-{{range .}} {{.Code}}  {{.Name}}
+func langCodesToTerm(w io.Writer, substr string) (ok bool) {
+	text := `┌──┬──────────┐
+│Code│Language name       │
+├──┼──────────┤
+{{range .}}│ {{.Code}} │{{printf "%-20s" .Name}}│
 {{end -}}
+└──┴──────────┘ 
 `
-	a := trans.ContainsLangList(substr)
+	a := tran.LangListContains(substr)
 	if len(a) == 0 {
-		return
+		return false
 	}
 	tmpl := template.Must(template.New("lang").Parse(text))
 	var buf bytes.Buffer
 	tmpl.Execute(&buf, a)
-	blue := aec.FullColorF(128, 160, 208)
-	fmt.Fprint(w, blue.Apply(string(buf.Bytes())))
+	fmt.Fprint(w, cInfo.Apply(string(buf.Bytes())))
+	return true
+}
+
+func langCodesToNonTerm(w io.Writer, substr string) {
+	text := `Code Language name
+---- -------------
+{{range .}} {{.Code}}  {{.Name}}
+{{end -}}
+`
+	a := tran.LangListContains(substr)
+	if len(a) == 0 {
+		return
+	}
+	tmpl := template.Must(template.New("lang").Parse(text))
+	tmpl.Execute(w, a)
+}
+
+func commandList(in string) {
+	if in != "l" {
+		in = in[2:]
+	}
+	if !langCodesToTerm(os.Stderr, in) {
+		msg := cError.Apply("%q is not found\n")
+		fmt.Fprintf(os.Stderr, msg, in)
+	}
 }
 
 func commandSource(in, curr string) (source string, ok bool) {
@@ -54,62 +87,58 @@ func commandSource(in, curr string) (source string, ok bool) {
 	switch {
 	case len(in) == 1: // in is "s"
 		if curr != "" {
-			green := aec.FullColorF(96, 192, 96)
-			msg := green.Apply("Source changed: Auto")
+			msg := cState.Apply("Source changed: Auto")
 			fmt.Fprintln(os.Stderr, msg)
 		}
 		return "", true
 	case len(in) >= 2: // in contains "s "
 		arg = strings.TrimSpace(string([]rune(in)[2:]))
-		code, name, ok = trans.LookupLang(arg)
+		code, name, ok = tran.LookupLang(arg)
 	default:
 		ok = false
 	}
 	if !ok {
-		red := aec.FullColorF(208, 64, 64)
-		msg := red.Apply("%s is not found\n")
+		msg := cError.Apply("%s is not found\n")
 		fmt.Fprintf(os.Stderr, msg, arg)
 		return "", false
 	}
 	if curr != code {
-		green := aec.FullColorF(96, 192, 96)
-		msg := green.Apply("Source changed: %s (%s)\n")
+		msg := cState.Apply("Source changed: %s (%s)\n")
 		fmt.Fprintf(os.Stderr, msg, name, code)
 	}
 	return code, true
 }
 
 func commandTarget(in, curr string) (target string, ok bool) {
-	var arg string
 	var code, name string
-	switch {
-	case len(in) == 1: // in is "t"
-		code, name = trans.CurrentLang()
-		ok = true
-	case len(in) >= 2: // in contains "t "
-		arg = strings.TrimSpace(string([]rune(in)[2:]))
-		code, name, ok = trans.LookupLang(arg)
-		if !ok {
-			code, name, ok = trans.LookupPlang(arg)
-		}
-	default:
-		ok = false
+	if in == "t" {
+		code, name = tran.CurrentLang()
+		msg := cState.Apply("Target changed: %s (%s)\n")
+		fmt.Fprintf(os.Stderr, msg, name, code)
+		return code, true
+	}
+
+	if strings.HasPrefix(in, "t ") {
+		in = strings.TrimSpace(string([]rune(in)[2:]))
+	}
+	if code, name, ok = tran.LookupLang(in); !ok {
+		code, name, ok = tran.LookupPlang(in)
 	}
 	if !ok {
-		red := aec.FullColorF(208, 64, 64)
-		msg := red.Apply("%q is not found\n")
-		fmt.Fprintf(os.Stderr, msg, arg)
+		msg := cError.Apply("%q is not found\n")
+		fmt.Fprintf(os.Stderr, msg, in)
 		return "", ok
 	}
 	if curr != code {
-		green := aec.FullColorF(96, 192, 96)
-		msg := green.Apply("Target changed: %s (%s)\n")
+		msg := cState.Apply("Target changed: %s (%s)\n")
 		fmt.Fprintf(os.Stderr, msg, name, code)
 	}
 	return code, ok
 }
 
 func interact(source, target string) {
+	fmt.Fprintln(os.Stderr, "Welcome to the GO-TRAN!")
+	helpToTerm()
 	line := liner.NewLiner()
 	defer line.Close()
 	for {
@@ -122,46 +151,36 @@ func interact(source, target string) {
 		if len(in) <= 0 {
 			continue
 		}
+		in = strings.TrimSpace(in)
 		switch {
 		case in == "q":
 			fmt.Fprintln(os.Stderr, "Leaving GO-TRAN.")
 			return
-
 		case in == "h":
-			printHelp()
-
+			helpToTerm()
 		case in == "l" || strings.HasPrefix(in, "l "):
-			var substr string
-			if in != "l" {
-				substr = in[2:]
-			}
-			printLangCodes(os.Stderr, substr)
-
+			commandList(in)
 		case in == "s" || strings.HasPrefix(in, "s "):
 			if code, ok := commandSource(in, source); ok {
 				source = code
 			}
-		case len(in) <= 2 || in == "t" || strings.HasPrefix(in, "t "):
-			if in != "t" && len(in) <= 2 {
-				in = "t " + in
-			}
+		case len(in) <= 2 || strings.HasPrefix(in, "t "):
 			if code, ok := commandTarget(in, target); ok {
 				target = code
 			}
 		default:
-			if out, ok := trans.Ptranslate(in, target); ok {
-				fmt.Fprintln(os.Stderr, out)
+			if out, ok := tran.Ptranslate(in, target); ok {
+				fmt.Fprintln(os.Stderr, cResult.Apply(out))
 			} else {
-				out, err := trans.Translate(in, source, target)
+				out, err := tran.Translate(in, source, target)
 				if err != nil {
-					red := aec.FullColorF(208, 64, 64)
-					fmt.Fprintln(os.Stderr, red.Apply(err.Error()))
+					fmt.Fprintln(os.Stderr, cError.Apply(err.Error()))
 				} else {
-					yellow := aec.FullColorF(255, 200, 100)
-					fmt.Fprintln(os.Stderr, yellow.Apply(out))
+					fmt.Fprintln(os.Stderr, cResult.Apply(out))
 				}
 			}
 		}
+		line.AppendHistory(in)
 	}
 }
 
@@ -198,14 +217,14 @@ func isTerminal(fd uintptr) bool {
 }
 
 func main() {
-	curr, _ := trans.CurrentLang()
+	curr, _ := tran.CurrentLang()
 	var help, lang bool
 	var source, target string
 
 	flag.BoolVar(&help, "h", false, "Show help")
-	flag.BoolVar(&lang, "l", false, "Show ISO-639-1 Language codes")
-	flag.StringVar(&source, "s", "", "Source language (ISO-639-1 code, Optional)")
-	flag.StringVar(&target, "t", curr, "Target language (ISO-639-1 code, Required)")
+	flag.BoolVar(&lang, "l", false, "Show language codes (ISO-639-1)")
+	flag.StringVar(&source, "s", "", "Source language code (optional)")
+	flag.StringVar(&target, "t", curr, "Target language code")
 	flag.Parse()
 
 	if help {
@@ -213,12 +232,10 @@ func main() {
 		return
 	}
 	if lang {
-		printLangCodes(os.Stdout, "")
+		langCodesToNonTerm(os.Stdout, "")
 		return
 	}
 	if flag.NArg() == 0 && isTerminal(os.Stdin.Fd()) {
-		fmt.Fprintln(os.Stderr, "Welcome to the GO-TRAN!")
-		printHelp()
 		interact(source, target)
 		return
 	}
@@ -226,7 +243,7 @@ func main() {
 	ss, err := readfiles(flag.Args())
 	in := strings.Join(ss, "\n")
 
-	out, err := trans.Translate(in, source, target)
+	out, err := tran.Translate(in, source, target)
 	if err != nil {
 		log.Fatal(err)
 	}

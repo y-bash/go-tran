@@ -195,19 +195,54 @@ var iso639map = map[string]string{
 	"zu": "Zulu",
 }
 
-func LookupLang(s string) (code, name string, ok bool) {
+type ISO639 struct {
+	Code string
+	Name string
+}
+
+var iso639Array = func() []*ISO639 {
+	a := make([]*ISO639, len(iso639map))
+	i := 0
+	for k, v := range iso639map {
+		a[i] = &ISO639{k, v}
+		i++
+	}
+	sort.Slice(a, func(i, j int) bool {
+		return a[i].Name < a[j].Name
+	})
+	return a
+}()
+
+func lookupLangCode(s string) (name string, ok bool) {
 	s = strings.ToLower(strings.TrimSpace(s))
+	name, ok = iso639map[s]
+	return
+}
+
+func lookupLangName(s string) (code, name string, ok bool) {
+	s = strings.ToLower(strings.TrimSpace(s))
+	for _, lang := range iso639Array {
+		lname := strings.ToLower(lang.Name)
+		if strings.Contains(lname, s) {
+			return lang.Code, lang.Name, true
+		}
+	}
+	return "", "", false
+}
+
+func LookupLang(s string) (code, name string, ok bool) {
 	switch {
 	case len(s) == 2:
-		name, ok := iso639map[s]
-		if ok {
+		if name, ok = lookupLangCode(s); ok {
 			return s, name, true
 		}
 	case len(s) >= 3:
-		for code, name := range iso639map {
-			lname := strings.ToLower(name)
-			if strings.Contains(lname, s) {
-				return code, name, true
+		if code, name, ok = lookupLangName(s); ok {
+			return
+		}
+		if en, err := Translate(s, "", "en"); err == nil {
+			if code, name, ok = lookupLangName(en); ok {
+				return
 			}
 		}
 	default:
@@ -216,24 +251,29 @@ func LookupLang(s string) (code, name string, ok bool) {
 	return "", "", false
 }
 
-type ISO639 struct {
-	Code string
-	Name string
-}
-
-func ContainsLangList(substr string) []ISO639 {
-	substr = strings.ToLower(substr)
-	a := make([]ISO639, 0, len(iso639map))
-	for k, v := range iso639map {
-		if strings.Contains(strings.ToLower(k), substr) ||
-			strings.Contains(strings.ToLower(v), substr) {
-			a = append(a, ISO639{k, v})
+func langListContains(substr string) []*ISO639 {
+	substr = strings.ToLower(strings.TrimSpace(substr))
+	if len(substr) == 0 {
+		return iso639Array
+	}
+	a := make([]*ISO639, 0, len(iso639Array))
+	for _, lang := range iso639Array {
+		if strings.Contains(strings.ToLower(lang.Code), substr) ||
+			strings.Contains(strings.ToLower(lang.Name), substr) {
+			a = append(a, lang)
 		}
 	}
-	sort.Slice(a, func(i, j int) bool {
-		return a[i].Code < a[j].Code
-	})
 	return a
+}
+
+func LangListContains(substr string) []*ISO639 {
+	if a := langListContains(substr); len(a) > 0 {
+		return a
+	}
+	if en, err := Translate(substr, "", "en"); err == nil {
+		return langListContains(en)
+	}
+	return []*ISO639{}
 }
 
 func CurrentLang() (code, name string) {
