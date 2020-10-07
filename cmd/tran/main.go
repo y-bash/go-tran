@@ -71,7 +71,7 @@ func langCodesToNonTerm(w io.Writer, substr string) {
 	tmpl.Execute(w, a)
 }
 
-func commandList(in string) {
+func commandLangCodes(in string) {
 	if in != "l" {
 		in = in[2:]
 	}
@@ -156,10 +156,13 @@ func interact(source, target string) {
 		case in == "q":
 			fmt.Fprintln(os.Stderr, "Leaving GO-TRAN.")
 			return
+
 		case in == "h":
 			helpToTerm()
+
 		case in == "l" || strings.HasPrefix(in, "l "):
-			commandList(in)
+			commandLangCodes(in)
+
 		case in == "s" || strings.HasPrefix(in, "s "):
 			if code, ok := commandSource(in, source); ok {
 				source = code
