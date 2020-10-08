@@ -1,4 +1,4 @@
-# go-tran (Command line Translation Utility in Golang)
+# GO-TRAN (Command line Translator in Golang)
 
 <img width="500" src="https://raw.githubusercontent.com/y-bash/go-tran/master/tran_1.gif">
 
@@ -6,7 +6,7 @@
 
 ```
 $ go get github.com/y-bash/go-tran
-$ cd $GOPATH/src/github.com/y-bash/go-gaga
+$ cd $GOPATH/src/github.com/y-bash/go-tran
 $ go install ./...
 ```
 
