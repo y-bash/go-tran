@@ -1,6 +1,6 @@
 package main
 
-import (
+omport (
 	"bufio"
 	"bytes"
 	"flag"
@@ -29,7 +29,7 @@ func helpToTerm() {
 │Cmd │    Description     │    Examples    │
 ├──┼──────────┼──┬─────┤
 │ h  │Show help           │h   │          │
-│ l  │Show language codes │l en│l nese    │
+│ l  │Show language codes │l en│l nor     │
 │ s  │Source language code│s en│s french  │
 │ t  │Target language code│t ja│t italian │
 │ q  │Quit                │q   │          │

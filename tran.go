@@ -25,10 +25,12 @@ func Translate(text, source, target string) (string, error) {
 	v.Add("target", target)
 
 	resp, err := http.PostForm(gURL, v)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
 	buf, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", err
