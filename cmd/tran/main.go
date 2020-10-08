@@ -17,6 +17,8 @@ import (
 	"github.com/y-bash/go-tran"
 )
 
+var version = "1.0.0"
+
 var (
 	cInfo   = aec.FullColorF(128, 160, 208) // Blue
 	cState  = aec.FullColorF(96, 192, 96)   // Green - State changed
@@ -137,7 +139,7 @@ func commandTarget(in, curr string) (target string, ok bool) {
 }
 
 func interact(source, target string) {
-	fmt.Fprintln(os.Stderr, "Welcome to the GO-TRAN!")
+	fmt.Fprintf(os.Stderr, "Welcome to the GO-TRAN! (Ver %s)\n", version)
 	helpToTerm()
 	line := liner.NewLiner()
 	defer line.Close()
@@ -221,13 +223,14 @@ func isTerminal(fd uintptr) bool {
 
 func main() {
 	curr, _ := tran.CurrentLang()
-	var help, lang bool
+	var help, lang, v bool
 	var source, target string
 
 	flag.BoolVar(&help, "h", false, "Show help")
 	flag.BoolVar(&lang, "l", false, "Show language codes (ISO-639-1)")
 	flag.StringVar(&source, "s", "", "Source language code (optional)")
 	flag.StringVar(&target, "t", curr, "Target language code")
+	flag.BoolVar(&v, "v", false, "Show version")
 	flag.Parse()
 
 	if help {
@@ -236,6 +239,10 @@ func main() {
 	}
 	if lang {
 		langCodesToNonTerm(os.Stdout, "")
+		return
+	}
+	if v {
+		fmt.Fprintf(os.Stderr, "GO-TRAN Version %s\n", version)
 		return
 	}
 	if flag.NArg() == 0 && isTerminal(os.Stdin.Fd()) {
