@@ -1,6 +1,7 @@
 package tran
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
@@ -200,6 +201,25 @@ type ISO639 struct {
 	Name string
 }
 
+func (l *ISO639) String() string {
+	return fmt.Sprintf("%s:%s", l.Code, l.Name)
+}
+
+type ISO639List []*ISO639
+
+func (a ISO639List) String() string {
+	var sb strings.Builder
+	sb.WriteRune('[')
+	for i, l := range a {
+		if i > 0 {
+			sb.WriteRune(' ')
+		}
+		sb.WriteString(l.String())
+	}
+	sb.WriteRune(']')
+	return sb.String()
+}
+
 var iso639Array = func() []*ISO639 {
 	a := make([]*ISO639, len(iso639map))
 	i := 0
@@ -266,7 +286,7 @@ func langListContains(substr string) []*ISO639 {
 	return a
 }
 
-func LangListContains(substr string) []*ISO639 {
+func LangListContains(substr string) ISO639List {
 	if a := langListContains(substr); len(a) > 0 {
 		return a
 	}
