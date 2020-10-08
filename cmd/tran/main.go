@@ -1,6 +1,6 @@
 package main
 
-omport (
+import (
 	"bufio"
 	"bytes"
 	"flag"

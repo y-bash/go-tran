@@ -14,16 +14,16 @@ type TranslateTest struct {
 }
 
 var translatetests = []TranslateTest{
-	0: {"猫", "", "de", "Katze", ""},       // Deutsch
-	1: {"猫", "", "en", "Cat", ""},         // English
-	2: {"猫", "", "es", "Gato", ""},        // Spanish
-	3: {"猫", "", "fr", "Chat", ""},        // French
-	4: {"猫", "", "it", "Gatto", ""},       // Italian
-	5: {"Cat", "", "ja", "ネコ", ""},        // Japanese
-	6: {"Cat", "", "ko", "고양이", ""},       // Korean
-	7: {"猫", "", "pt", "Gato", ""},        // Portuguese
-	8: {"Cat", "", "zh", "猫", ""},         // Chinese
-	9: {"Cat", "", "xx", "", "Exception"}, // Invalid
+	0: {"猫", "", "de", "Katze", ""},     // Deutsch
+	1: {"猫", "", "en", "Cat", ""},       // English
+	2: {"猫", "", "es", "Gato", ""},      // Spanish
+	3: {"猫", "", "fr", "Chat", ""},      // French
+	4: {"猫", "", "it", "Gatto", ""},     // Italian
+	5: {"Cat", "", "ja", "ネコ", ""},      // Japanese
+	6: {"Cat", "", "ko", "고양이", ""},     // Korean
+	7: {"猫", "", "pt", "Gato", ""},      // Portuguese
+	8: {"Cat", "", "zh", "猫", ""},       // Chinese
+	9: {"Cat", "", "xx", "", "Invalid"}, // Invalid
 }
 
 func TestTranslate(t *testing.T) {

@@ -213,9 +213,9 @@ var iso639Array = func() []*ISO639 {
 	return a
 }()
 
-func lookupLangCode(s string) (name string, ok bool) {
-	s = strings.ToLower(strings.TrimSpace(s))
-	name, ok = iso639map[s]
+func lookupLangCode(s string) (code, name string, ok bool) {
+	code = strings.ToLower(strings.TrimSpace(s))
+	name, ok = iso639map[code]
 	return
 }
 
@@ -233,8 +233,8 @@ func lookupLangName(s string) (code, name string, ok bool) {
 func LookupLang(s string) (code, name string, ok bool) {
 	switch {
 	case len(s) == 2:
-		if name, ok = lookupLangCode(s); ok {
-			return s, name, true
+		if code, name, ok = lookupLangCode(s); ok {
+			return
 		}
 	case len(s) >= 3:
 		if code, name, ok = lookupLangName(s); ok {
