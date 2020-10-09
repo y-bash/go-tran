@@ -251,7 +251,7 @@ func main() {
 	}
 
 	ss, err := readfiles(flag.Args())
-	in := strings.Join(ss, "\n")
+	in := strings.Join(ss, "")
 
 	out, err := tran.Translate(in, source, target)
 	if err != nil {
