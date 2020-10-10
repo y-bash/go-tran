@@ -40,7 +40,7 @@ func Load() (*Config, error) {
 	initial.Default.Source = ""
 	initial.Default.Target, _ = tran.CurrentLang()
 	initial.API.Endpoint = string(tran.DefaultAPI())
-	initial.API.MaxNumLines = 30 // TODO config support
+	initial.API.MaxNumLines = 0
 	initial.Colors.Info = cInfo
 	initial.Colors.State = cState
 	initial.Colors.Error = cError
