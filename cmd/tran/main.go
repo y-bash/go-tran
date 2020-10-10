@@ -16,7 +16,7 @@ import (
 	"github.com/y-bash/go-tran/config"
 )
 
-const version = "1.0.0-dev-config"
+const version = "1.0.1"
 
 var cfg *config.Config
 
