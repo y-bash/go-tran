@@ -233,7 +233,7 @@ var iso639Array = func() ISO639List {
 	return a
 }()
 
-func lookupLangCode(s string) (code, name string, ok bool) {
+func LookupLangCode(s string) (code, name string, ok bool) {
 	code = strings.ToLower(strings.TrimSpace(s))
 	name, ok = iso639map[code]
 	return
@@ -280,7 +280,7 @@ func CurrentLang() (code, name string) {
 		}
 	}
 	if len(lang) >= 2 {
-		code, name, ok := lookupLangCode(string(lang[:2]))
+		code, name, ok := LookupLangCode(string(lang[:2]))
 		if ok {
 			return code, name
 		}

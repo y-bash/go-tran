@@ -8,10 +8,10 @@ import (
 )
 
 const (
-	cInfo   = "#80a0d0" // Blue  ( 96, 192,  96)
-	cState  = "#60c060" // Green ( 96, 192,  96) - State changed
-	cError  = "#d04040" // Red   (208,  64,  64)
-	cResult = "#ffc864" // Yellow(255, 200, 100) - Translation result
+	cInfo   = "#80a0d0" // Blue
+	cState  = "#60c060" // Green  - State changed
+	cError  = "#d04040" // Red
+	cResult = "#ffc864" // Yellow - Translation result
 )
 
 func hex2ansi(hex string) (aec.ANSI, error) {
@@ -22,34 +22,23 @@ func hex2ansi(hex string) (aec.ANSI, error) {
 	return aec.FullColorF(r, g, b), nil
 }
 
-/*
-func hex2ansiMust(hex, alt string) aec.ANSI {
-	if ansi, err := hex2ansi(hex); err == nil {
-		return ansi
-	}
-	ansi, err := hex2ansi(alt)
-	if err != nil {
-		panic(err) // xxx
-	}
-	return ansi
-}
-*/
-
 type Config struct {
-	DefaultSource  string
-	DefaultTarget  string
-	APIEndpoint    tran.Endpoint
-	APIMaxNumLines uint
-	InfoColor      aec.ANSI
-	StateColor     aec.ANSI
-	ErrorColor     aec.ANSI
-	ResultColor    aec.ANSI
+	DefaultSource     string
+	DefaultSourceName string // xxx
+	DefaultTarget     string
+	DefaultTargetName string // xxx
+	APIEndpoint       tran.Endpoint
+	APIMaxNumLines    uint
+	InfoColor         aec.ANSI
+	StateColor        aec.ANSI
+	ErrorColor        aec.ANSI
+	ResultColor       aec.ANSI
 }
 
 func Load() (*Config, error) {
 	var initial Toml
-	initial.Default.Source, _ = tran.CurrentLang()
-	initial.Default.Target = ""
+	initial.Default.Source = ""
+	initial.Default.Target, _ = tran.CurrentLang()
 	initial.API.Endpoint = string(tran.DefaultAPI())
 	initial.API.MaxNumLines = 30 // xxx
 	initial.Colors.Info = cInfo
@@ -64,10 +53,29 @@ func Load() (*Config, error) {
 	}
 
 	var config Config
-	config.DefaultSource = loaded.Default.Source
-	config.DefaultTarget = loaded.Default.Target
+
+	if loaded.Default.Source == "" {
+		config.DefaultSource = ""
+		config.DefaultSourceName = "Auto"
+	} else {
+		code, name, ok := tran.LookupLangCode(loaded.Default.Source)
+		if !ok {
+			return nil, fmt.Errorf("Source xxxxxxxxxxxxxx")
+		}
+		config.DefaultSource = code
+		config.DefaultSourceName = name
+	}
+
+	code, name, ok := tran.LookupLangCode(loaded.Default.Target)
+	if !ok {
+		return nil, fmt.Errorf("Target xxxxxxxxxxxxxx: %s", loaded.Default.Target)
+	}
+	config.DefaultTarget = code
+	config.DefaultTargetName = name
+
 	config.APIEndpoint = tran.Endpoint(loaded.API.Endpoint)
 	config.APIMaxNumLines = loaded.API.MaxNumLines
+
 	config.InfoColor, err = hex2ansi(loaded.Colors.Info)
 	if err != nil {
 		return nil, fmt.Errorf("config.toml;[colors];info is %s", err.Error())

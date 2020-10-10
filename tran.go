@@ -65,7 +65,7 @@ func (ep Endpoint) Translate(text, source, target string) (string, error) {
 func (ep Endpoint) LookupLang(s string) (code, name string, ok bool) {
 	switch {
 	case len(s) == 2:
-		if code, name, ok = lookupLangCode(s); ok {
+		if code, name, ok = LookupLangCode(s); ok {
 			return
 		}
 	case len(s) >= 3:

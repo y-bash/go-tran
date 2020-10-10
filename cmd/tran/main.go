@@ -75,57 +75,61 @@ func commandLangCodes(in string) {
 	}
 }
 
-func commandSource(in, curr string) (source string, ok bool) {
-	var arg string
-	var code, name string
-	switch {
-	case len(in) == 1: // in is "s"
-		if curr != "" {
-			msg := cfg.StateColor.Apply("Source changed: Auto")
-			fmt.Fprintln(os.Stderr, msg)
-		}
-		return "", true
-	case len(in) >= 2: // in contains "s "
-		arg = strings.TrimSpace(string([]rune(in)[2:]))
-		code, name, ok = cfg.APIEndpoint.LookupLang(arg)
-	default:
-		ok = false
+func brackets(s string) string {
+	if s == "" {
+		return ""
 	}
-	if !ok {
-		msg := cfg.ErrorColor.Apply("%s is not found\n")
-		fmt.Fprintf(os.Stderr, msg, arg)
-		return "", false
+	return "(" + s + ")"
+}
+
+func commandSource(in, curr string) (source string, ok bool) {
+	var code, name string
+	if in == "s" {
+		code = cfg.DefaultSource
+		name = cfg.DefaultSourceName
+		ok = true
+	} else {
+		if strings.HasPrefix(in, "s ") {
+			in = strings.TrimSpace(string([]rune(in)[2:]))
+		}
+		if code, name, ok = cfg.APIEndpoint.LookupLang(in); !ok {
+			code, name, ok = tran.LookupPlang(in)
+		}
+		if !ok {
+			msg := cfg.ErrorColor.Apply("%q is not found\n")
+			fmt.Fprintf(os.Stderr, msg, in)
+			return "", ok
+		}
 	}
 	if curr != code {
-		msg := cfg.StateColor.Apply("Source changed: %s (%s)\n")
-		fmt.Fprintf(os.Stderr, msg, name, code)
+		msg := cfg.StateColor.Apply("Srouce changed: %s %s\n")
+		fmt.Fprintf(os.Stderr, msg, name, brackets(code))
 	}
-	return code, true
+	return code, ok
 }
 
 func commandTarget(in, curr string) (target string, ok bool) {
 	var code, name string
 	if in == "t" {
-		code, name = tran.CurrentLang()
-		msg := cfg.StateColor.Apply("Target changed: %s (%s)\n")
-		fmt.Fprintf(os.Stderr, msg, name, code)
-		return code, true
-	}
-
-	if strings.HasPrefix(in, "t ") {
-		in = strings.TrimSpace(string([]rune(in)[2:]))
-	}
-	if code, name, ok = cfg.APIEndpoint.LookupLang(in); !ok {
-		code, name, ok = tran.LookupPlang(in)
-	}
-	if !ok {
-		msg := cfg.ErrorColor.Apply("%q is not found\n")
-		fmt.Fprintf(os.Stderr, msg, in)
-		return "", ok
+		code = cfg.DefaultTarget
+		name = cfg.DefaultTargetName
+		ok = true
+	} else {
+		if strings.HasPrefix(in, "t ") {
+			in = strings.TrimSpace(string([]rune(in)[2:]))
+		}
+		if code, name, ok = cfg.APIEndpoint.LookupLang(in); !ok {
+			code, name, ok = tran.LookupPlang(in)
+		}
+		if !ok {
+			msg := cfg.ErrorColor.Apply("%q is not found\n")
+			fmt.Fprintf(os.Stderr, msg, in)
+			return "", ok
+		}
 	}
 	if curr != code {
-		msg := cfg.StateColor.Apply("Target changed: %s (%s)\n")
-		fmt.Fprintf(os.Stderr, msg, name, code)
+		msg := cfg.StateColor.Apply("Target changed: %s %s\n")
+		fmt.Fprintf(os.Stderr, msg, name, brackets(code))
 	}
 	return code, ok
 }
@@ -219,14 +223,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	curr, _ := tran.CurrentLang()
 	var help, lang, v bool
 	var source, target string
 
 	flag.BoolVar(&help, "h", false, "Show help")
 	flag.BoolVar(&lang, "l", false, "Show language codes (ISO-639-1)")
-	flag.StringVar(&source, "s", "", "Source language code (optional)")
-	flag.StringVar(&target, "t", curr, "Target language code")
+	flag.StringVar(&source, "s", "", "Source language code")
+	flag.StringVar(&target, "t", "", "Target language code")
 	flag.BoolVar(&v, "v", false, "Show version")
 	flag.Parse()
 
@@ -242,14 +245,18 @@ func main() {
 		fmt.Fprintf(os.Stderr, "GO-TRAN Version %s\n", version)
 		return
 	}
+	if source == "" {
+		source = cfg.DefaultSource
+	}
+	if target == "" {
+		target = cfg.DefaultTarget
+	}
 	if flag.NArg() == 0 && isTerminal(os.Stdin.Fd()) {
 		interact(source, target)
 		return
 	}
-
 	ss, err := readfiles(flag.Args())
 	in := strings.Join(ss, "")
-
 	out, err := cfg.APIEndpoint.Translate(in, source, target)
 	if err != nil {
 		log.Fatal(err)
