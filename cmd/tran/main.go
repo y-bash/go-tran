@@ -12,19 +12,14 @@ import (
 	"text/template"
 
 	"github.com/mattn/go-isatty"
-	"github.com/morikuni/aec"
 	"github.com/peterh/liner"
 	"github.com/y-bash/go-tran"
+	"github.com/y-bash/go-tran/config"
 )
 
-var version = "1.0.0"
+const version = "1.0.0-dev-config"
 
-var (
-	cInfo   = aec.FullColorF(128, 160, 208) // Blue
-	cState  = aec.FullColorF(96, 192, 96)   // Green - State changed
-	cError  = aec.FullColorF(208, 64, 64)   // Red
-	cResult = aec.FullColorF(255, 200, 100) // Yellow - Translation result
-)
+var cfg *config.Config
 
 func helpToTerm() {
 	text := `┌──┬──────────┬────────┐
@@ -37,7 +32,7 @@ func helpToTerm() {
 │ q  │Quit                │q   │          │
 └──┴──────────┴──┴─────┘ `
 
-	fmt.Fprintln(os.Stderr, cInfo.Apply(text))
+	fmt.Fprintln(os.Stderr, cfg.InfoColor.Apply(text))
 }
 
 func langCodesToTerm(w io.Writer, substr string) (ok bool) {
@@ -48,27 +43,24 @@ func langCodesToTerm(w io.Writer, substr string) (ok bool) {
 {{end -}}
 └──┴──────────┘ 
 `
-	a := tran.LangListContains(substr)
+	a := cfg.APIEndpoint.LangListContains(substr)
 	if len(a) == 0 {
 		return false
 	}
 	tmpl := template.Must(template.New("lang").Parse(text))
 	var buf bytes.Buffer
 	tmpl.Execute(&buf, a)
-	fmt.Fprint(w, cInfo.Apply(string(buf.Bytes())))
+	fmt.Fprint(w, cfg.InfoColor.Apply(string(buf.Bytes())))
 	return true
 }
 
-func langCodesToNonTerm(w io.Writer, substr string) {
+func langCodesToNonTerm(w io.Writer) {
 	text := `Code Language name
 ---- -------------
 {{range .}} {{.Code}}  {{.Name}}
 {{end -}}
 `
-	a := tran.LangListContains(substr)
-	if len(a) == 0 {
-		return
-	}
+	a := tran.AllLangList()
 	tmpl := template.Must(template.New("lang").Parse(text))
 	tmpl.Execute(w, a)
 }
@@ -78,7 +70,7 @@ func commandLangCodes(in string) {
 		in = in[2:]
 	}
 	if !langCodesToTerm(os.Stderr, in) {
-		msg := cError.Apply("%q is not found\n")
+		msg := cfg.ErrorColor.Apply("%q is not found\n")
 		fmt.Fprintf(os.Stderr, msg, in)
 	}
 }
@@ -89,23 +81,23 @@ func commandSource(in, curr string) (source string, ok bool) {
 	switch {
 	case len(in) == 1: // in is "s"
 		if curr != "" {
-			msg := cState.Apply("Source changed: Auto")
+			msg := cfg.StateColor.Apply("Source changed: Auto")
 			fmt.Fprintln(os.Stderr, msg)
 		}
 		return "", true
 	case len(in) >= 2: // in contains "s "
 		arg = strings.TrimSpace(string([]rune(in)[2:]))
-		code, name, ok = tran.LookupLang(arg)
+		code, name, ok = cfg.APIEndpoint.LookupLang(arg)
 	default:
 		ok = false
 	}
 	if !ok {
-		msg := cError.Apply("%s is not found\n")
+		msg := cfg.ErrorColor.Apply("%s is not found\n")
 		fmt.Fprintf(os.Stderr, msg, arg)
 		return "", false
 	}
 	if curr != code {
-		msg := cState.Apply("Source changed: %s (%s)\n")
+		msg := cfg.StateColor.Apply("Source changed: %s (%s)\n")
 		fmt.Fprintf(os.Stderr, msg, name, code)
 	}
 	return code, true
@@ -115,7 +107,7 @@ func commandTarget(in, curr string) (target string, ok bool) {
 	var code, name string
 	if in == "t" {
 		code, name = tran.CurrentLang()
-		msg := cState.Apply("Target changed: %s (%s)\n")
+		msg := cfg.StateColor.Apply("Target changed: %s (%s)\n")
 		fmt.Fprintf(os.Stderr, msg, name, code)
 		return code, true
 	}
@@ -123,16 +115,16 @@ func commandTarget(in, curr string) (target string, ok bool) {
 	if strings.HasPrefix(in, "t ") {
 		in = strings.TrimSpace(string([]rune(in)[2:]))
 	}
-	if code, name, ok = tran.LookupLang(in); !ok {
+	if code, name, ok = cfg.APIEndpoint.LookupLang(in); !ok {
 		code, name, ok = tran.LookupPlang(in)
 	}
 	if !ok {
-		msg := cError.Apply("%q is not found\n")
+		msg := cfg.ErrorColor.Apply("%q is not found\n")
 		fmt.Fprintf(os.Stderr, msg, in)
 		return "", ok
 	}
 	if curr != code {
-		msg := cState.Apply("Target changed: %s (%s)\n")
+		msg := cfg.StateColor.Apply("Target changed: %s (%s)\n")
 		fmt.Fprintf(os.Stderr, msg, name, code)
 	}
 	return code, ok
@@ -175,13 +167,13 @@ func interact(source, target string) {
 			}
 		default:
 			if out, ok := tran.Ptranslate(in, target); ok {
-				fmt.Fprintln(os.Stderr, cResult.Apply(out))
+				fmt.Fprintln(os.Stderr, cfg.ResultColor.Apply(out))
 			} else {
-				out, err := tran.Translate(in, source, target)
+				out, err := cfg.APIEndpoint.Translate(in, source, target)
 				if err != nil {
-					fmt.Fprintln(os.Stderr, cError.Apply(err.Error()))
+					fmt.Fprintln(os.Stderr, cfg.ErrorColor.Apply(err.Error()))
 				} else {
-					fmt.Fprintln(os.Stderr, cResult.Apply(out))
+					fmt.Fprintln(os.Stderr, cfg.ResultColor.Apply(out))
 				}
 			}
 		}
@@ -222,6 +214,11 @@ func isTerminal(fd uintptr) bool {
 }
 
 func main() {
+	var err error
+	if cfg, err = config.Load(); err != nil {
+		log.Fatal(err)
+	}
+
 	curr, _ := tran.CurrentLang()
 	var help, lang, v bool
 	var source, target string
@@ -238,7 +235,7 @@ func main() {
 		return
 	}
 	if lang {
-		langCodesToNonTerm(os.Stdout, "")
+		langCodesToNonTerm(os.Stdout)
 		return
 	}
 	if v {
@@ -253,7 +250,7 @@ func main() {
 	ss, err := readfiles(flag.Args())
 	in := strings.Join(ss, "")
 
-	out, err := tran.Translate(in, source, target)
+	out, err := cfg.APIEndpoint.Translate(in, source, target)
 	if err != nil {
 		log.Fatal(err)
 	}
