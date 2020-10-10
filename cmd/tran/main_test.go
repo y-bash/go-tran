@@ -2,17 +2,17 @@ package main
 
 import (
 	"io/ioutil"
-	"testing"
 	"strings"
+	"testing"
 )
 
-type ReadfilesTest struct{
+type ReadfilesTest struct {
 	in  []string
 	out string
 }
 
 var readfilestests = []ReadfilesTest{
-	0: {[]string{"testdata/00in01.txt","testdata/00in02.txt","testdata/00in03.txt"},
+	0: {[]string{"testdata/00in01.txt", "testdata/00in02.txt", "testdata/00in03.txt"},
 		"testdata/00out.txt"},
 	1: {[]string{"testdata/00in01.txt"}, "testdata/00in01.txt"},
 }

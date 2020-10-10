@@ -36,7 +36,7 @@ func exists(path string) bool {
 	return !os.IsNotExist(err)
 }
 
-func (t *Toml)complete(initial *Toml) (overwritten bool) {
+func (t *Toml) complete(initial *Toml) (overwritten bool) {
 	if t.Default.Source == "" {
 		t.Default.Source = initial.Default.Source
 		overwritten = true

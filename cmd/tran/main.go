@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 	"text/template"
@@ -85,7 +84,7 @@ func brackets(s string) string {
 func commandSource(in, curr string) (source string, ok bool) {
 	var code, name string
 	if in == "s" {
-		code = cfg.DefaultSource
+		code = cfg.DefaultSourceCode
 		name = cfg.DefaultSourceName
 		ok = true
 	} else {
@@ -111,7 +110,7 @@ func commandSource(in, curr string) (source string, ok bool) {
 func commandTarget(in, curr string) (target string, ok bool) {
 	var code, name string
 	if in == "t" {
-		code = cfg.DefaultTarget
+		code = cfg.DefaultTargetCode
 		name = cfg.DefaultTargetName
 		ok = true
 	} else {
@@ -220,7 +219,8 @@ func isTerminal(fd uintptr) bool {
 func main() {
 	var err error
 	if cfg, err = config.Load(); err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "GO-TRAN: %s\n", err)
+		os.Exit(1)
 	}
 
 	var help, lang, v bool
@@ -246,10 +246,10 @@ func main() {
 		return
 	}
 	if source == "" {
-		source = cfg.DefaultSource
+		source = cfg.DefaultSourceCode
 	}
 	if target == "" {
-		target = cfg.DefaultTarget
+		target = cfg.DefaultTargetCode
 	}
 	if flag.NArg() == 0 && isTerminal(os.Stdin.Fd()) {
 		interact(source, target)
@@ -259,7 +259,8 @@ func main() {
 	in := strings.Join(ss, "")
 	out, err := cfg.APIEndpoint.Translate(in, source, target)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "GO-TRAN: %s\n", err)
+		os.Exit(1)
 	}
 	fmt.Print(out)
 }

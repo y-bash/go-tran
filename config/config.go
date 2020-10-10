@@ -23,10 +23,10 @@ func hex2ansi(hex string) (aec.ANSI, error) {
 }
 
 type Config struct {
-	DefaultSource     string
-	DefaultSourceName string // xxx
-	DefaultTarget     string
-	DefaultTargetName string // xxx
+	DefaultSourceCode string
+	DefaultSourceName string
+	DefaultTargetCode string
+	DefaultTargetName string
 	APIEndpoint       tran.Endpoint
 	APIMaxNumLines    uint
 	InfoColor         aec.ANSI
@@ -40,7 +40,7 @@ func Load() (*Config, error) {
 	initial.Default.Source = ""
 	initial.Default.Target, _ = tran.CurrentLang()
 	initial.API.Endpoint = string(tran.DefaultAPI())
-	initial.API.MaxNumLines = 30 // xxx
+	initial.API.MaxNumLines = 30 // TODO config support
 	initial.Colors.Info = cInfo
 	initial.Colors.State = cState
 	initial.Colors.Error = cError
@@ -55,22 +55,24 @@ func Load() (*Config, error) {
 	var config Config
 
 	if loaded.Default.Source == "" {
-		config.DefaultSource = ""
+		config.DefaultSourceCode = ""
 		config.DefaultSourceName = "Auto"
 	} else {
 		code, name, ok := tran.LookupLangCode(loaded.Default.Source)
 		if !ok {
-			return nil, fmt.Errorf("Source xxxxxxxxxxxxxx")
+			return nil, fmt.Errorf(
+				"config.toml;[default];source is invaid: %s", code)
 		}
-		config.DefaultSource = code
+		config.DefaultSourceCode = code
 		config.DefaultSourceName = name
 	}
 
 	code, name, ok := tran.LookupLangCode(loaded.Default.Target)
 	if !ok {
-		return nil, fmt.Errorf("Target xxxxxxxxxxxxxx: %s", loaded.Default.Target)
+		return nil, fmt.Errorf(
+			"config.toml;[default];target is invalid: %s", code)
 	}
-	config.DefaultTarget = code
+	config.DefaultTargetCode = code
 	config.DefaultTargetName = name
 
 	config.APIEndpoint = tran.Endpoint(loaded.API.Endpoint)
