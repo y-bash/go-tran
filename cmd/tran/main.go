@@ -219,32 +219,18 @@ func isTerminal(fd uintptr) bool {
 }
 
 func usage() {
-	msg := `NAME
-       tran - language translator
+	msg := `GO-TRAN (The language translator), version %s
 
-SYNOPSIS
-       tran [OPTION...] [FILE...]
+usage:  tran [option...] [file...]
 
-DESCRIPTION
-       tran translates FILEs to standard output.
-
-OPTIONS
-       -h
-              Show summary of options.
-
-       -l
-              List the language codes(ISO639-1).
-
-       -s CODE
-              Specify the source language with CODE(ISO639-1).
-
-       -t CODE
-              Specify the target language with CODE(ISO639-1).
-  
-       -v
-              Output version information.
+options:
+    -h          show summary of options.
+    -l          list the language codes(ISO639-1).
+    -s CODE     specify the source language with CODE(ISO639-1).
+    -t CODE     specify the target language with CODE(ISO639-1).
+    -v          output version information.
 `
-	fmt.Fprintln(os.Stderr, msg)
+	fmt.Fprintf(os.Stderr, msg, version)
 }
 
 func main() {
