@@ -220,7 +220,7 @@ func isTerminal(fd uintptr) bool {
 
 func usage() {
 	msg := `NAME
-       tran - language trnslator
+       tran - language translator
 
 SYNOPSIS
        tran [OPTION...] [FILE...]
@@ -233,7 +233,7 @@ OPTIONS
               Show summary of options.
 
        -l
-              List Language codes (ISO639-1) and names.
+              List the language codes(ISO639-1).
 
        -s CODE
               Specify the source language with CODE(ISO639-1).
