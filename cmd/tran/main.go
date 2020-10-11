@@ -218,7 +218,38 @@ func isTerminal(fd uintptr) bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
+func usage() {
+	msg := `NAME
+       tran - language trnslator
+
+SYNOPSIS
+       tran [OPTION...] [FILE...]
+
+DESCRIPTION
+       tran translates FILEs to standard output.
+
+OPTIONS
+       -h
+              Show summary of options.
+
+       -l
+              List Language codes (ISO639-1) and names.
+
+       -s CODE
+              Specify the source language with CODE(ISO639-1).
+
+       -t CODE
+              Specify the target language with CODE(ISO639-1).
+  
+       -v
+              Output version information.
+`
+	fmt.Fprintln(os.Stderr, msg)
+}
+
 func main() {
+	flag.Usage	= usage
+
 	var help, lang, v bool
 	var source, target string
 
