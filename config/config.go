@@ -96,10 +96,17 @@ func tomlToConfig(toml *Toml) (*Config, error) {
 	return &config, nil
 }
 
-func Load() (*Config, error) {
-	loaded, err := loadToml(initialToml())
+func Load(source, target string) (*Config, error) {
+	initial := initialToml()
+	loaded, err := loadToml(initial)
 	if err != nil {
 		return nil, err
+	}
+	if source != "" {
+		loaded.Default.Source = source
+	}
+	if target != "" {
+		loaded.Default.Target = target
 	}
 	return tomlToConfig(loaded)
 }

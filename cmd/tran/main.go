@@ -133,9 +133,11 @@ func commandTarget(in, curr string) (target string, ok bool) {
 	return code, ok
 }
 
-func interact(source, target string) {
+func interact() {
 	fmt.Fprintf(os.Stderr, "Welcome to the GO-TRAN! (Ver %s)\n", version)
 	helpToTerm()
+	source := cfg.DefaultSourceCode
+	target := cfg.DefaultTargetCode
 	line := liner.NewLiner()
 	defer line.Close()
 	for {
@@ -217,12 +219,6 @@ func isTerminal(fd uintptr) bool {
 }
 
 func main() {
-	var err error
-	if cfg, err = config.Load(); err != nil {
-		fmt.Fprintf(os.Stderr, "GO-TRAN: %s\n", err)
-		os.Exit(1)
-	}
-
 	var help, lang, v bool
 	var source, target string
 
@@ -245,14 +241,13 @@ func main() {
 		fmt.Fprintf(os.Stderr, "GO-TRAN Version %s\n", version)
 		return
 	}
-	if source == "" {
-		source = cfg.DefaultSourceCode
-	}
-	if target == "" {
-		target = cfg.DefaultTargetCode
+	var err error
+	if cfg, err = config.Load(source, target); err != nil {
+		fmt.Fprintf(os.Stderr, "GO-TRAN: %s\n", err)
+		os.Exit(1)
 	}
 	if flag.NArg() == 0 && isTerminal(os.Stdin.Fd()) {
-		interact(source, target)
+		interact()
 		return
 	}
 	ss, err := readfiles(flag.Args())
