@@ -50,7 +50,7 @@ func (t *Toml) complete(initial *Toml) (overwritten bool) {
 		overwritten = true
 	}
 	if t.API.MaxNumLines == 0 {
-		t.API.Endpoint = initial.API.Endpoint
+		t.API.MaxNumLines = initial.API.MaxNumLines
 		overwritten = true
 	}
 	if t.Colors.Info == "" {
@@ -92,11 +92,7 @@ func getTomlPath() (path string, err error) {
 	return filepath.Join(cfgdir, "config.toml"), nil
 }
 
-func loadToml(initial *Toml) (*Toml, error) {
-	path, err := getTomlPath()
-	if err != nil {
-		return nil, err
-	}
+func loadTomlFrom(path string, initial *Toml) (*Toml, error) {
 	if exists(path) {
 		var loaded Toml
 		_, err := toml.DecodeFile(path, &loaded)
@@ -118,4 +114,12 @@ func loadToml(initial *Toml) (*Toml, error) {
 	}
 	toml.NewEncoder(f).Encode(initial)
 	return initial, nil
+}
+
+func loadToml(initial *Toml) (*Toml, error) {
+	path, err := getTomlPath()
+	if err != nil {
+		return nil, err
+	}
+	return loadTomlFrom(path, initial)
 }

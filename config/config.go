@@ -35,7 +35,7 @@ type Config struct {
 	ResultColor       aec.ANSI
 }
 
-func Load() (*Config, error) {
+func initialToml() *Toml {
 	var initial Toml
 	initial.Default.Source = ""
 	initial.Default.Target, _ = tran.CurrentLang()
@@ -45,29 +45,26 @@ func Load() (*Config, error) {
 	initial.Colors.State = cState
 	initial.Colors.Error = cError
 	initial.Colors.Result = cResult
+	return &initial
+}
 
-	var err error
-	loaded, err := loadToml(&initial)
-	if err != nil {
-		return nil, err
-	}
-
+func tomlToConfig(toml *Toml) (*Config, error) {
 	var config Config
 
-	if loaded.Default.Source == "" {
+	if toml.Default.Source == "" {
 		config.DefaultSourceCode = ""
 		config.DefaultSourceName = "Auto"
 	} else {
-		code, name, ok := tran.LookupLangCode(loaded.Default.Source)
+		code, name, ok := tran.LookupLangCode(toml.Default.Source)
 		if !ok {
 			return nil, fmt.Errorf(
-				"config.toml;[default];source is invaid: %s", code)
+				"config.toml;[default];source is invalid: %s", code)
 		}
 		config.DefaultSourceCode = code
 		config.DefaultSourceName = name
 	}
 
-	code, name, ok := tran.LookupLangCode(loaded.Default.Target)
+	code, name, ok := tran.LookupLangCode(toml.Default.Target)
 	if !ok {
 		return nil, fmt.Errorf(
 			"config.toml;[default];target is invalid: %s", code)
@@ -75,25 +72,34 @@ func Load() (*Config, error) {
 	config.DefaultTargetCode = code
 	config.DefaultTargetName = name
 
-	config.APIEndpoint = tran.Endpoint(loaded.API.Endpoint)
-	config.APIMaxNumLines = loaded.API.MaxNumLines
+	config.APIEndpoint = tran.Endpoint(toml.API.Endpoint)
+	config.APIMaxNumLines = toml.API.MaxNumLines
 
-	config.InfoColor, err = hex2ansi(loaded.Colors.Info)
+	var err error
+	config.InfoColor, err = hex2ansi(toml.Colors.Info)
 	if err != nil {
 		return nil, fmt.Errorf("config.toml;[colors];info is %s", err.Error())
 	}
-	config.StateColor, err = hex2ansi(loaded.Colors.State)
+	config.StateColor, err = hex2ansi(toml.Colors.State)
 	if err != nil {
 		return nil, fmt.Errorf("config.toml;[color];state is %s", err.Error())
 	}
-	config.ErrorColor, err = hex2ansi(loaded.Colors.Error)
+	config.ErrorColor, err = hex2ansi(toml.Colors.Error)
 	if err != nil {
 		return nil, fmt.Errorf("config.toml;[color];error is %s", err.Error())
 	}
-	config.ResultColor, err = hex2ansi(loaded.Colors.Result)
+	config.ResultColor, err = hex2ansi(toml.Colors.Result)
 	if err != nil {
 		return nil, fmt.Errorf("config.toml;[color];result is %s", err.Error())
 	}
 
 	return &config, nil
+}
+
+func Load() (*Config, error) {
+	loaded, err := loadToml(initialToml())
+	if err != nil {
+		return nil, err
+	}
+	return tomlToConfig(loaded)
 }

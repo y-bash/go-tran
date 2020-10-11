@@ -21,13 +21,13 @@ func TestReadfiles(t *testing.T) {
 	for i, tt := range readfilestests {
 		out, err := readfiles(tt.in)
 		if err != nil {
-			t.Errorf("#%d testdata is failed: %s: ", i, err.Error())
+			t.Errorf("#%d testdata is failed: %s", i, err.Error())
 			continue
 		}
 		have := strings.Join(out, "")
 		buf, err := ioutil.ReadFile(tt.out)
 		if err != nil {
-			t.Errorf("#%d testdata is failed: %s: ", i, err.Error())
+			t.Errorf("#%d testdata is failed: %s", i, err.Error())
 			continue
 		}
 		want := string(buf)
