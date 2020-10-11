@@ -236,14 +236,14 @@ options:
 func main() {
 	flag.Usage	= usage
 
-	var help, lang, v bool
+	var help, lang, ver bool
 	var source, target string
 
 	flag.BoolVar(&help, "h", false, "Show help")
 	flag.BoolVar(&lang, "l", false, "Show language codes (ISO-639-1)")
 	flag.StringVar(&source, "s", "", "Source language code")
 	flag.StringVar(&target, "t", "", "Target language code")
-	flag.BoolVar(&v, "v", false, "Show version")
+	flag.BoolVar(&ver, "v", false, "Show version")
 	flag.Parse()
 
 	if help {
@@ -254,7 +254,7 @@ func main() {
 		langCodesToNonTerm(os.Stdout)
 		return
 	}
-	if v {
+	if ver {
 		fmt.Fprintf(os.Stderr, "GO-TRAN Version %s\n", version)
 		return
 	}
