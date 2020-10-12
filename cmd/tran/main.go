@@ -267,7 +267,7 @@ func scanText(sc *bufio.Scanner, limit int) (out string, eof bool) {
 	return out, len(out) == 0
 }
 
-func translate(w io.Writer, r io.Reader, srcEcho bool) error {
+func translate(r io.Reader, srcEcho bool) error {
 	source := cfg.DefaultSourceCode
 	target := cfg.DefaultTargetCode
 	tran := cfg.APIEndpoint.Translate
@@ -283,17 +283,23 @@ func translate(w io.Writer, r io.Reader, srcEcho bool) error {
 			return err
 		}
 		if !srcEcho {
-			fmt.Fprint(w, out)
+			fmt.Print(out)
 			continue
 		}
-		iss := strings.Split(in, "\n")
-		oss := strings.Split(out, "\n")
-		for i, is := range iss {
-			if i >= len(iss) - 1 && len(is) == 0 {
+		inss := strings.Split(in, "\n")
+		outss := strings.Split(out, "\n")
+		for i, ins := range inss {
+			if i >= len(inss) - 1 && len(ins) == 0 {
 				continue
 			}
-			fmt.Fprintln(w, is)
-			fmt.Fprintln(w, oss[i])
+			fmt.Println(ins)
+			var outs string
+			if isTerminal(os.Stdout.Fd()) {
+				outs = cfg.ResultColor.Apply(outss[i])
+			} else {
+				outs = outss[i]
+			}
+			fmt.Println(outs)
 		}
 	}
 	return nil
@@ -314,7 +320,7 @@ func isDir(path string) bool {
 
 func batch(paths []string, srcEcho bool) {
 	if len(paths) == 0 {
-		translate(os.Stdout, os.Stdin, srcEcho)
+		translate(os.Stdin, srcEcho)
 		return
 	}
 	for _, path := range paths {
@@ -333,7 +339,7 @@ func batch(paths []string, srcEcho bool) {
 			continue
 		}
 		defer f.Close()
-		translate(os.Stdout, f, srcEcho)
+		translate(f, srcEcho)
 	}
 	return
 }
