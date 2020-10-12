@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/morikuni/aec"
@@ -33,6 +34,26 @@ type Config struct {
 	StateColor        aec.ANSI
 	ErrorColor        aec.ANSI
 	ResultColor       aec.ANSI
+}
+
+func (c *Config) ChangeDefault(source, target string) error {
+	if source != "" {
+		code, name, ok := tran.LookupLangCode(source)
+		if !ok {
+			return errors.New(source + ": Is not found")
+		}
+		c.DefaultSourceCode = code
+		c.DefaultSourceName = name
+	}
+	if target != "" {
+		code, name, ok := tran.LookupLangCode(target)
+		if !ok {
+			return errors.New(target + ": Is not found")
+		}
+		c.DefaultTargetCode = code
+		c.DefaultTargetName = name
+	}
+	return nil
 }
 
 func initialToml() *Toml {
@@ -106,17 +127,11 @@ func tomlToConfig(toml *Toml) (*Config, error) {
 	return &config, nil
 }
 
-func Load(source, target string) (*Config, error) {
+func Load() (*Config, error) {
 	initial := initialToml()
 	loaded, err := loadToml(initial)
 	if err != nil {
 		return nil, err
-	}
-	if source != "" {
-		loaded.Default.Source = source
-	}
-	if target != "" {
-		loaded.Default.Target = target
 	}
 	return tomlToConfig(loaded)
 }

@@ -59,6 +59,7 @@ Usage:  tran [option...] [file...]
 
 Options:
     -a          show the script (Google Apps) for the API Server.
+    -e          echo the source text.
     -h          show summary of options.
     -l          list the language codes(ISO639-1).
     -s CODE     specify the source language with CODE(ISO639-1).
@@ -181,11 +182,29 @@ func commandTarget(in, curr string) (target string, ok bool) {
 	return code, ok
 }
 
-func interact() {
+func initialLang(source, target string) (string, string) {
+	if source != "" {
+		if code, ok := commandSource("s " + source, cfg.DefaultSourceCode); ok {
+			source = code
+		} else {
+			source = cfg.DefaultSourceCode
+		}
+	}
+	if target != "" {
+		if code, ok := commandTarget(target, cfg.DefaultTargetCode); ok {
+			target = code
+		} else {
+			target = cfg.DefaultTargetCode
+		}
+	}
+	return source, target
+}
+
+func interact(source , target string) {
 	fmt.Fprintf(os.Stderr, "Welcome to the GO-TRAN! (Ver %s)\n", version)
 	helpToTerm()
-	source := cfg.DefaultSourceCode
-	target := cfg.DefaultTargetCode
+	source, target = initialLang(source, target)
+
 	line := liner.NewLiner()
 	defer line.Close()
 	for {
@@ -327,7 +346,7 @@ func main() {
 
 	flag.Usage	= helpToNonTerm
 	flag.BoolVar(&api, "a", false, "show api (Google Apps Script)")
-	flag.BoolVar(&srcEcho, "e", false, "echo the input text")
+	flag.BoolVar(&srcEcho, "e", false, "echo the source text")
 	flag.BoolVar(&help, "h", false, "show help")
 	flag.BoolVar(&lang, "l", false, "list the language codes (ISO-639-1)")
 	flag.StringVar(&source, "s", "", "source language code")
@@ -353,12 +372,16 @@ func main() {
 	}
 
 	var err error
-	if cfg, err = config.Load(source, target); err != nil {
+	if cfg, err = config.Load(); err != nil {
 		fmt.Fprintf(os.Stderr, "GO-TRAN: %s\n", err)
 		os.Exit(1)
 	}
 	if flag.NArg() == 0 && isTerminal(os.Stdin.Fd()) {
-		interact()
+		interact(source, target)
+		return
+	}
+	if err := cfg.ChangeDefault(source, target); err != nil {
+		fmt.Fprintf(os.Stderr, "GO-TRAN: %s\n", err)
 		return
 	}
 	batch(flag.Args(), srcEcho)
