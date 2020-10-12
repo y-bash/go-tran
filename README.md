@@ -1,6 +1,6 @@
 # GO-TRAN (Command line Translator in Golang)
 
-<img width="500" src="https://raw.githubusercontent.com/y-bash/go-tran/main/tran_1.gif">
+<img width="500" src="https://raw.githubusercontent.com/y-bash/go-tran/main/screenshots/tran_1.gif">
 
 ## Installation
 
@@ -16,25 +16,25 @@ $ go install ./...
 
 #### Translation
 
-<img width="500" src="https://raw.githubusercontent.com/y-bash/go-tran/main/tran_1.gif">
+<img width="500" src="https://raw.githubusercontent.com/y-bash/go-tran/main/screenshots/tran_1.gif">
 
 #### Changing Target Language
 
-<img width="500" src="https://raw.githubusercontent.com/y-bash/go-tran/main/tran_2.gif">
+<img width="500" src="https://raw.githubusercontent.com/y-bash/go-tran/main/screenshots/tran_2.gif">
 
 #### Finding ISO639-1 Language codes
 
-<img width="500" src="https://raw.githubusercontent.com/y-bash/go-tran/main/tran_3.gif">
+<img width="500" src="https://raw.githubusercontent.com/y-bash/go-tran/main/screenshots/tran_3.gif">
 
 ### Batch interface
 
 #### Standard Input
 
-<img width="500" src="https://raw.githubusercontent.com/y-bash/go-tran/main/tran_4.gif">
+<img width="500" src="https://raw.githubusercontent.com/y-bash/go-tran/main/screenshots/tran_4.gif">
 
 #### Translate a File
 
-<img width="500" src="https://raw.githubusercontent.com/y-bash/go-tran/main/tran_5.gif">
+<img width="500" src="https://raw.githubusercontent.com/y-bash/go-tran/main/screenshots/tran_5.gif">
 
 ## License
 

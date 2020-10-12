@@ -1,0 +1,13 @@
+[default]
+  source = ""
+  target = ""
+
+[api]
+  endpoint = ""
+  max_num_lines = 0
+
+[colors]
+  info = ""
+  state = ""
+  error = ""
+  result = ""

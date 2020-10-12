@@ -220,8 +220,8 @@ func (a ISO639List) String() string {
 	return sb.String()
 }
 
-var iso639Array = func() []*ISO639 {
-	a := make([]*ISO639, len(iso639map))
+var iso639Array = func() ISO639List {
+	a := make(ISO639List, len(iso639map))
 	i := 0
 	for k, v := range iso639map {
 		a[i] = &ISO639{k, v}
@@ -233,7 +233,7 @@ var iso639Array = func() []*ISO639 {
 	return a
 }()
 
-func lookupLangCode(s string) (code, name string, ok bool) {
+func LookupLangCode(s string) (code, name string, ok bool) {
 	code = strings.ToLower(strings.TrimSpace(s))
 	name, ok = iso639map[code]
 	return
@@ -246,27 +246,6 @@ func lookupLangName(s string) (code, name string, ok bool) {
 		if strings.Contains(lname, s) {
 			return lang.Code, lang.Name, true
 		}
-	}
-	return "", "", false
-}
-
-func LookupLang(s string) (code, name string, ok bool) {
-	switch {
-	case len(s) == 2:
-		if code, name, ok = lookupLangCode(s); ok {
-			return
-		}
-	case len(s) >= 3:
-		if code, name, ok = lookupLangName(s); ok {
-			return
-		}
-		if en, err := Translate(s, "", "en"); err == nil {
-			if code, name, ok = lookupLangName(en); ok {
-				return
-			}
-		}
-	default:
-		// Do nothing
 	}
 	return "", "", false
 }
@@ -286,14 +265,8 @@ func langListContains(substr string) []*ISO639 {
 	return a
 }
 
-func LangListContains(substr string) ISO639List {
-	if a := langListContains(substr); len(a) > 0 {
-		return a
-	}
-	if en, err := Translate(substr, "", "en"); err == nil {
-		return langListContains(en)
-	}
-	return []*ISO639{}
+func AllLangList() ISO639List {
+	return iso639Array
 }
 
 func CurrentLang() (code, name string) {
@@ -307,7 +280,7 @@ func CurrentLang() (code, name string) {
 		}
 	}
 	if len(lang) >= 2 {
-		code, name, ok := LookupLang(string(lang[:2]))
+		code, name, ok := LookupLangCode(string(lang[:2]))
 		if ok {
 			return code, name
 		}
