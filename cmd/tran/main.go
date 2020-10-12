@@ -20,6 +20,25 @@ const version = "1.0.1"
 
 var cfg *config.Config
 
+func isTerminal(fd uintptr) bool {
+	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
+}
+
+func helpToNonTerm() {
+	msg := `GO-TRAN (The language translator), version %s
+
+usage:  tran [option...] [file...]
+
+options:
+    -h          show summary of options.
+    -l          list the language codes(ISO639-1).
+    -s CODE     specify the source language with CODE(ISO639-1).
+    -t CODE     specify the target language with CODE(ISO639-1).
+    -v          output version information.
+`
+	fmt.Fprintf(os.Stderr, msg, version)
+}
+
 func helpToTerm() {
 	text := `┌──┬──────────┬────────┐
 │Cmd │    Description     │    Examples    │
@@ -32,6 +51,17 @@ func helpToTerm() {
 └──┴──────────┴──┴─────┘ `
 
 	fmt.Fprintln(os.Stderr, cfg.InfoColor.Apply(text))
+}
+
+func langCodesToNonTerm(w io.Writer) {
+	text := `Code Language name
+---- -------------
+{{range .}} {{.Code}}  {{.Name}}
+{{end -}}
+`
+	a := tran.AllLangList()
+	tmpl := template.Must(template.New("lang").Parse(text))
+	tmpl.Execute(w, a)
 }
 
 func langCodesToTerm(w io.Writer, substr string) (ok bool) {
@@ -53,15 +83,11 @@ func langCodesToTerm(w io.Writer, substr string) (ok bool) {
 	return true
 }
 
-func langCodesToNonTerm(w io.Writer) {
-	text := `Code Language name
----- -------------
-{{range .}} {{.Code}}  {{.Name}}
-{{end -}}
-`
-	a := tran.AllLangList()
-	tmpl := template.Must(template.New("lang").Parse(text))
-	tmpl.Execute(w, a)
+func brackets(s string) string {
+	if s == "" {
+		return ""
+	}
+	return "(" + s + ")"
 }
 
 func commandLangCodes(in string) {
@@ -72,13 +98,6 @@ func commandLangCodes(in string) {
 		msg := cfg.ErrorColor.Apply("%q is not found\n")
 		fmt.Fprintf(os.Stderr, msg, in)
 	}
-}
-
-func brackets(s string) string {
-	if s == "" {
-		return ""
-	}
-	return "(" + s + ")"
 }
 
 func commandSource(in, curr string) (source string, ok bool) {
@@ -186,59 +205,64 @@ func interact() {
 	}
 }
 
-func read(f io.Reader) string {
+func scanText(sc *bufio.Scanner, n int) (out string, eof bool) {
 	var sb strings.Builder
 	sb.Grow(4096)
-	sc := bufio.NewScanner(f)
-	for sc.Scan() {
-		sb.WriteString(sc.Text())
+	for i := 0; i < n; {
+		if !sc.Scan() {
+			break
+		}
+		s := sc.Text()
+		sb.WriteString(s)
 		sb.WriteString("\n")
+		i += len([]rune(s))
 	}
-	return sb.String()
+	out = sb.String()
+	return out, len(out) == 0
 }
 
-func readfiles(paths []string) (out []string, err error) {
+func translate(w io.Writer, r io.Reader) error {
+	source := cfg.DefaultSourceCode
+	target := cfg.DefaultTargetCode
+	tran := cfg.APIEndpoint.Translate
+	limit := cfg.APILimitNChars
+	sc := bufio.NewScanner(r)
+	for {
+		in, eof := scanText(sc, limit)
+		if eof {
+			break
+		}
+		out, err := tran(in, source, target)
+		if err != nil {
+			return err
+		}
+		fmt.Fprint(w, out)
+	}
+	return nil
+}
+
+func batch(paths []string) error {
 	if len(paths) == 0 {
-		out = []string{read(os.Stdin)}
-		return
+		translate(os.Stdout, os.Stdin)
+		return nil
 	}
 	for _, path := range paths {
 		var f *os.File
-		f, err = os.Open(path)
+		f, err := os.Open(path)
 		if err != nil {
-			return
+			return err
 		}
 		defer f.Close()
-		out = append(out, read(f))
+		translate(os.Stdout, f)
 	}
-	return
-}
-
-func isTerminal(fd uintptr) bool {
-	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
-}
-
-func usage() {
-	msg := `GO-TRAN (The language translator), version %s
-
-usage:  tran [option...] [file...]
-
-options:
-    -h          show summary of options.
-    -l          list the language codes(ISO639-1).
-    -s CODE     specify the source language with CODE(ISO639-1).
-    -t CODE     specify the target language with CODE(ISO639-1).
-    -v          output version information.
-`
-	fmt.Fprintf(os.Stderr, msg, version)
+	return nil
 }
 
 func main() {
-	flag.Usage	= usage
-
 	var help, lang, ver bool
 	var source, target string
 
+	flag.Usage	= helpToNonTerm
 	flag.BoolVar(&help, "h", false, "Show help")
 	flag.BoolVar(&lang, "l", false, "Show language codes (ISO-639-1)")
 	flag.StringVar(&source, "s", "", "Source language code")
@@ -258,6 +282,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "GO-TRAN Version %s\n", version)
 		return
 	}
+
 	var err error
 	if cfg, err = config.Load(source, target); err != nil {
 		fmt.Fprintf(os.Stderr, "GO-TRAN: %s\n", err)
@@ -267,12 +292,9 @@ func main() {
 		interact()
 		return
 	}
-	ss, err := readfiles(flag.Args())
-	in := strings.Join(ss, "")
-	out, err := cfg.APIEndpoint.Translate(in, source, target)
+	err = batch(flag.Args())
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "GO-TRAN: %s\n", err)
 		os.Exit(1)
 	}
-	fmt.Print(out)
 }

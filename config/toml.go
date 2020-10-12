@@ -15,7 +15,7 @@ type Default struct {
 
 type API struct {
 	Endpoint    string `toml:"endpoint"`
-	MaxNumLines uint   `toml:"max_num_lines"`
+	LimitNChars int    `toml:"limit_n_chars"`
 }
 
 type Colors struct {
@@ -49,8 +49,8 @@ func (t *Toml) complete(initial *Toml) (overwritten bool) {
 		t.API.Endpoint = initial.API.Endpoint
 		overwritten = true
 	}
-	if t.API.MaxNumLines == 0 {
-		t.API.MaxNumLines = initial.API.MaxNumLines
+	if t.API.LimitNChars == 0 {
+		t.API.LimitNChars = initial.API.LimitNChars
 		overwritten = true
 	}
 	if t.Colors.Info == "" {

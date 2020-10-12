@@ -51,7 +51,7 @@ func TestLoadTomlFrom(t *testing.T) {
 	initial1.Default.Source = "1"
 	initial1.Default.Target = "2"
 	initial1.API.Endpoint = "3"
-	initial1.API.MaxNumLines = 4
+	initial1.API.LimitNChars = 4
 	initial1.Colors.Info = "#555555"
 	initial1.Colors.State = "#666666"
 	initial1.Colors.Error = "#777777"
@@ -60,7 +60,7 @@ func TestLoadTomlFrom(t *testing.T) {
 	initial2.Default.Source = "5"
 	initial2.Default.Target = "6"
 	initial2.API.Endpoint = "7"
-	initial2.API.MaxNumLines = 8
+	initial2.API.LimitNChars = 8
 	initial2.Colors.Info = "#999999"
 	initial2.Colors.State = "#AAAAAA"
 	initial2.Colors.Error = "#BBBBBB"

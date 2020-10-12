@@ -28,7 +28,7 @@ type Config struct {
 	DefaultTargetCode string
 	DefaultTargetName string
 	APIEndpoint       tran.Endpoint
-	APIMaxNumLines    uint
+	APILimitNChars    int
 	InfoColor         aec.ANSI
 	StateColor        aec.ANSI
 	ErrorColor        aec.ANSI
@@ -40,7 +40,7 @@ func initialToml() *Toml {
 	initial.Default.Source = ""
 	initial.Default.Target, _ = tran.CurrentLang()
 	initial.API.Endpoint = string(tran.DefaultAPI())
-	initial.API.MaxNumLines = 0
+	initial.API.LimitNChars = 4000
 	initial.Colors.Info = cInfo
 	initial.Colors.State = cState
 	initial.Colors.Error = cError
@@ -73,7 +73,17 @@ func tomlToConfig(toml *Toml) (*Config, error) {
 	config.DefaultTargetName = name
 
 	config.APIEndpoint = tran.Endpoint(toml.API.Endpoint)
-	config.APIMaxNumLines = toml.API.MaxNumLines
+	if len(config.APIEndpoint) <= 0 {
+		return nil, fmt.Errorf(
+			"config.toml;[api];endpoint is invalid: %q, want: url",
+			config.APIEndpoint)
+	}
+	config.APILimitNChars = toml.API.LimitNChars
+	if config.APILimitNChars <= 0 {
+		return nil, fmt.Errorf(
+			"config.toml;[api];limit_n_chars is invalid: %d, want: positive number",
+			config.APILimitNChars)
+	}
 
 	var err error
 	config.InfoColor, err = hex2ansi(toml.Colors.Info)

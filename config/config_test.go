@@ -43,13 +43,17 @@ var tomltoconfigtests = []TomlToConfigTest{
 		Config{}, "source is invalid"},
 	3: {Toml{Default{"", "zz"}, API{}, Colors{}},
 		Config{}, "target is invalid"},
-	4: {Toml{Default{"", "ja"}, API{}, Colors{"#Z", "", "", ""}},
+	4: {Toml{Default{"", "ja"}, API{"", 1}, Colors{}},
+		Config{}, "endpoint is invalid"},
+	5: {Toml{Default{"", "ja"}, API{"url", 0}, Colors{}},
+		Config{}, "limit_n_chars is invalid"},
+	6: {Toml{Default{"", "ja"}, API{"url", 1}, Colors{"#Z", "", "", ""}},
 		Config{}, "info is invalid"},
-	5: {Toml{Default{"", "ja"}, API{}, Colors{"#000000", "#Z", "", ""}},
+	7: {Toml{Default{"", "ja"}, API{"url", 1}, Colors{"#000000", "#Z", "", ""}},
 		Config{}, "state is invalid"},
-	6: {Toml{Default{"", "ja"}, API{}, Colors{"#000000", "#000000", "#Z", ""}},
+	8: {Toml{Default{"", "ja"}, API{"url", 1}, Colors{"#000000", "#000000", "#Z", ""}},
 		Config{}, "error is invalid"},
-	7: {Toml{Default{"", "ja"}, API{}, Colors{"#000000", "#000000", "#000000", "#Z"}},
+	9: {Toml{Default{"", "ja"}, API{"url", 1}, Colors{"#000000", "#000000", "#000000", "#Z"}},
 		Config{}, "result is invalid"},
 }
 
@@ -58,11 +62,11 @@ func TestTomlToConfig(t *testing.T) {
 		config, err := tomlToConfig(&tt.toml)
 		if err != nil {
 			if tt.err == "" {
-				t.Errorf("#%d\n\thave error: %q,\n\twant error: nil", i, err)
+				t.Errorf("#%d\n\thave error: %s,\n\twant error: nil", i, err)
 				continue
 			}
 			if !strings.Contains(err.Error(), tt.err) {
-				t.Errorf("#%d\n\thave error: %q,\n\twant error: %q", i, err, tt.err)
+				t.Errorf("#%d\n\thave error: %s,\n\twant error: %q", i, err, tt.err)
 			}
 			continue
 		}
@@ -89,9 +93,9 @@ func TestTomlToConfig(t *testing.T) {
 			t.Errorf("#%d have: config.APIEndpoint = %s, want: %s",
 				i, config.APIEndpoint, tt.config.APIEndpoint)
 		}
-		if config.APIMaxNumLines != tt.config.APIMaxNumLines {
-			t.Errorf("#%d have: config.APIMaxNumLines = %d, want: %d",
-				i, config.APIMaxNumLines, tt.config.APIMaxNumLines)
+		if config.APILimitNChars != tt.config.APILimitNChars {
+			t.Errorf("#%d have: config.APILimitNChars = %d, want: %d",
+				i, config.APILimitNChars, tt.config.APILimitNChars)
 		}
 		if config.InfoColor.String() != tt.config.InfoColor.String() {
 			t.Errorf("#%d have: config.InfoColor = %s, want: %s",
