@@ -183,19 +183,17 @@ func commandTarget(in, curr string) (target string, ok bool) {
 }
 
 func initialLang(source, target string) (string, string) {
-	if source != "" {
-		if code, ok := commandSource("s " + source, cfg.DefaultSourceCode); ok {
-			source = code
-		} else {
-			source = cfg.DefaultSourceCode
-		}
+	s := strings.TrimSpace("s " + source)
+	if code, ok := commandSource(s, cfg.DefaultSourceCode); ok {
+		source = code
+	} else {
+		source = cfg.DefaultSourceCode
 	}
-	if target != "" {
-		if code, ok := commandTarget(target, cfg.DefaultTargetCode); ok {
-			target = code
-		} else {
-			target = cfg.DefaultTargetCode
-		}
+	t := strings.TrimSpace("t " + target)
+	if code, ok := commandTarget(t, cfg.DefaultTargetCode); ok {
+		target = code
+	} else {
+		target = cfg.DefaultTargetCode
 	}
 	return source, target
 }
