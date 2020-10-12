@@ -271,21 +271,43 @@ func translate(w io.Writer, r io.Reader) error {
 	return nil
 }
 
-func batch(paths []string) error {
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	return !os.IsNotExist(err)
+}
+
+func isDir(path string) bool {
+	stat, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return stat.IsDir()
+}
+
+func batch(paths []string) {
 	if len(paths) == 0 {
 		translate(os.Stdout, os.Stdin)
-		return nil
+		return
 	}
 	for _, path := range paths {
+		if !exists(path) {
+			fmt.Fprintf(os.Stderr, "GO-TRAN: %s:  No such file or directory\n", path)
+			continue
+		}
+		if isDir(path) {
+			fmt.Fprintf(os.Stderr, "GO-TRAN: %s: Is a directory\n", path)
+			continue
+		}
 		var f *os.File
 		f, err := os.Open(path)
 		if err != nil {
-			return err
+			fmt.Fprintf(os.Stderr, "GO-TRAN: %s\n", err)
+			continue
 		}
 		defer f.Close()
 		translate(os.Stdout, f)
 	}
-	return nil
+	return
 }
 
 func main() {
@@ -327,9 +349,5 @@ func main() {
 		interact()
 		return
 	}
-	err = batch(flag.Args())
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "GO-TRAN: %s\n", err)
-		os.Exit(1)
-	}
+	batch(flag.Args())
 }
