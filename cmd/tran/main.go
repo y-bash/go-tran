@@ -24,12 +24,41 @@ func isTerminal(fd uintptr) bool {
 	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
 }
 
+func apiScriptToNonTerm() {
+	msg := `// You can register this script in your GAS (Google Apps
+// Script) project, and set its URL in config.toml.
+function doPost(e) {
+    let body
+    try {
+        const p = e.parameter
+        const s = LanguageApp.translate(p.text, p.source, p.target)
+        body = {code: 200, text: s}
+    } catch (e) {
+        try {
+            const msg = LanguageApp.translate(e.toString(), "", "en")
+            body = {code: 400, message: msg}
+        } catch (e) {
+            body = {code: 500, message: e.toString()}
+        }
+    }
+
+    let resp = ContentService.createTextOutput()
+    resp.setMimeType(ContentService.MimeType.JSON)
+    resp.setContent(JSON.stringify(body))
+
+    return resp;
+}`
+
+	fmt.Fprintln(os.Stderr, msg)
+}
+
 func helpToNonTerm() {
 	msg := `GO-TRAN (The language translator), version %s
 
-usage:  tran [option...] [file...]
+Usage:  tran [option...] [file...]
 
-options:
+Options:
+    -a          show the script (Google Apps) for the API Server.
     -h          show summary of options.
     -l          list the language codes(ISO639-1).
     -s CODE     specify the source language with CODE(ISO639-1).
@@ -205,23 +234,24 @@ func interact() {
 	}
 }
 
-func scanText(sc *bufio.Scanner, n int) (out string, eof bool) {
+func scanText(sc *bufio.Scanner, limit int) (out string, eof bool) {
 	var sb strings.Builder
 	sb.Grow(4096)
-	for i := 0; i < n; {
+	for i := 0; i < limit; {
 		if !sc.Scan() {
 			break
 		}
 		s := sc.Text()
 		sb.WriteString(s)
 		sb.WriteString("\n")
-		i += len([]rune(s))
+		i += len([]rune(s)) + 1
 	}
 	out = sb.String()
 	return out, len(out) == 0
 }
 
 func translate(w io.Writer, r io.Reader) error {
+	// TODO: xxx support source echo
 	source := cfg.DefaultSourceCode
 	target := cfg.DefaultTargetCode
 	tran := cfg.APIEndpoint.Translate
@@ -259,17 +289,22 @@ func batch(paths []string) error {
 }
 
 func main() {
-	var help, lang, ver bool
+	var api, help, lang, ver bool
 	var source, target string
 
 	flag.Usage	= helpToNonTerm
-	flag.BoolVar(&help, "h", false, "Show help")
-	flag.BoolVar(&lang, "l", false, "Show language codes (ISO-639-1)")
-	flag.StringVar(&source, "s", "", "Source language code")
-	flag.StringVar(&target, "t", "", "Target language code")
-	flag.BoolVar(&ver, "v", false, "Show version")
+	flag.BoolVar(&api, "a", false, "show api (Google Apps Script)")
+	flag.BoolVar(&help, "h", false, "show help")
+	flag.BoolVar(&lang, "l", false, "list the language codes (ISO-639-1)")
+	flag.StringVar(&source, "s", "", "source language code")
+	flag.StringVar(&target, "t", "", "target language code")
+	flag.BoolVar(&ver, "v", false, "show version")
 	flag.Parse()
 
+	if api {
+		apiScriptToNonTerm()
+		return
+	}
 	if help {
 		flag.Usage()
 		return
