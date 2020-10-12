@@ -250,8 +250,7 @@ func scanText(sc *bufio.Scanner, limit int) (out string, eof bool) {
 	return out, len(out) == 0
 }
 
-func translate(w io.Writer, r io.Reader) error {
-	// TODO: xxx support source echo
+func translate(w io.Writer, r io.Reader, srcEcho bool) error {
 	source := cfg.DefaultSourceCode
 	target := cfg.DefaultTargetCode
 	tran := cfg.APIEndpoint.Translate
@@ -266,7 +265,19 @@ func translate(w io.Writer, r io.Reader) error {
 		if err != nil {
 			return err
 		}
-		fmt.Fprint(w, out)
+		if !srcEcho {
+			fmt.Fprint(w, out)
+			continue
+		}
+		iss := strings.Split(in, "\n")
+		oss := strings.Split(out, "\n")
+		for i, is := range iss {
+			if i >= len(iss) - 1 && len(is) == 0 {
+				continue
+			}
+			fmt.Fprintln(w, is)
+			fmt.Fprintln(w, oss[i])
+		}
 	}
 	return nil
 }
@@ -284,9 +295,9 @@ func isDir(path string) bool {
 	return stat.IsDir()
 }
 
-func batch(paths []string) {
+func batch(paths []string, srcEcho bool) {
 	if len(paths) == 0 {
-		translate(os.Stdout, os.Stdin)
+		translate(os.Stdout, os.Stdin, srcEcho)
 		return
 	}
 	for _, path := range paths {
@@ -305,17 +316,18 @@ func batch(paths []string) {
 			continue
 		}
 		defer f.Close()
-		translate(os.Stdout, f)
+		translate(os.Stdout, f, srcEcho)
 	}
 	return
 }
 
 func main() {
-	var api, help, lang, ver bool
+	var api, srcEcho, help, lang, ver bool
 	var source, target string
 
 	flag.Usage	= helpToNonTerm
 	flag.BoolVar(&api, "a", false, "show api (Google Apps Script)")
+	flag.BoolVar(&srcEcho, "e", false, "echo the input text")
 	flag.BoolVar(&help, "h", false, "show help")
 	flag.BoolVar(&lang, "l", false, "list the language codes (ISO-639-1)")
 	flag.StringVar(&source, "s", "", "source language code")
@@ -349,5 +361,5 @@ func main() {
 		interact()
 		return
 	}
-	batch(flag.Args())
+	batch(flag.Args(), srcEcho)
 }
